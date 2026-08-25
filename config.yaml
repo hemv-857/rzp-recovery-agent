@@ -1,0 +1,62 @@
+# Recovery Agent policy configuration. Money in paise.
+policy:
+  max_attempts_per_case: 3          # interventions (retries + nudges) per failure case
+  attempt_window_hours: 72          # attempts counted inside this rolling window
+  cooldown_minutes: 240             # min gap between two interventions on one case
+  quiet_hours_ist: [22, 8]          # no customer contact between 22:00 and 08:00 IST
+  auto_action_cap_paise: 2500000    # above this (Rs 25k), retry needs human approval
+  final_followup_hours: 168         # case written off if unrecovered after this
+  case_expiry_hours: 336            # hard stop for scheduling anything
+
+channels:
+  sms:
+    cost_paise: 15
+    enabled: true
+  whatsapp:
+    cost_paise: 30
+    enabled: true
+  email:
+    cost_paise: 2
+    enabled: true
+  voice:
+    cost_paise: 300                  # ~Rs 3/min TTS call
+    enabled: true
+  payment_link:
+    cost_paise: 0                   # delivered inline with a nudge or as bare link
+
+retry:
+  network_timeout_backoff_min: 20   # first quick retry after transient failures
+  issuer_unavailable_backoff_min: 45
+  salary_cycle_days: [1, 5]         # insufficient-funds retries align to these dates
+  voice_min_amount_paise: 2500000   # Hinglish voice call for receivables >= Rs 25k
+
+world:                              # simulator only — latent behaviour model
+  base_pay_probability:
+    INSUFFICIENT_FUNDS: 0.50
+    NETWORK_TIMEOUT: 0.65
+    ISSUER_UNAVAILABLE: 0.60
+    SOFT_DECLINE_OTHER: 0.40
+    HARD_DECLINE: 0.06
+    MANDATE_ISSUE: 0.32
+    CUSTOMER_ABANDONMENT: 0.22
+    INVOICE_OVERDUE: 0.38
+    SUBSCRIPTION_FAILED: 0.30
+    UNKNOWN: 0.25
+  control_baseline_scale: 0.55      # organic recovery fraction of base prob, no contact
+  channel_effectiveness:
+    whatsapp: 1.0
+    sms: 0.85
+    email: 0.55
+    payment_link: 0.9
+    voice: 0.72
+  fatigue_decay_per_contact: 0.82   # multiplicative pay-prob decay per prior contact
+  opt_out_probability_per_contact: 0.012
+  promise_reply_probability: 0.18   # share of ignored contacts answered with a promise
+  promise_keep_probability: 0.55    # share of promises honored before the check fires
+  salary_alignment_boost: 1.35      # multiplier when retry lands on/near salary date
+  quiet_hour_penalty: 0.6           # multiplier if action fires inside quiet hours
+  seed: 42
+
+simulation:
+  batch_size: 2000
+  horizon_days: 7

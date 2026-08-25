@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Revenue Recovery Agent — Dashboard</title>
+    <script src="/static/vendor/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: #e0e7ff; min-height: 100vh; padding: 24px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 32px; font-weight: bold; color: #fff; }
+        .header p { color: #93c5fd; font-size: 14px; margin-top: 6px; }
+        .badge { font-size: 11px; letter-spacing: .08em; padding: 5px 10px; border-radius: 999px;
+                 border: 1px solid rgba(147,197,253,.35); color: #93c5fd; text-transform: uppercase; }
+        .loading, .error { display: flex; align-items: center; justify-content: center; min-height: 400px;
+            background: rgba(255,255,255,.05); backdrop-filter: blur(20px); border-radius: 12px;
+            border: 1px solid rgba(147,197,253,.2); }
+        .error { color: #f87171; }
+        .grid { display: grid; gap: 24px; margin-bottom: 24px; }
+        .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .metric-card, .chart-card, .compliance-card, .cases-card {
+            background: rgba(255,255,255,.05); backdrop-filter: blur(20px);
+            border-radius: 12px; padding: 24px; border: 1px solid rgba(147,197,253,.2);
+            transition: all .3s ease;
+        }
+        .metric-card:hover { border-color: rgba(147,197,253,.4); transform: translateY(-2px); }
+        .metric-label { color: #93c5fd; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+        .metric-value { font-size: 32px; font-weight: bold; color: #fff; margin-bottom: 6px; }
+        .metric-sub { font-size: 12px; color: #4ade80; }
+        .metric-sub.muted { color: #94a3b8; }
+        .charts-grid { grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); }
+        .chart-card h3, .cases-card h3 { color: #fff; font-size: 17px; font-weight: 600; margin-bottom: 18px; }
+        .compliance-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+        .compliance-card .label { color: #93c5fd; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
+        .compliance-card .value { font-size: 24px; font-weight: bold; color: #fff; }
+        .compliance-card .note { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+        .honesty { border-left: 3px solid #fbbf24; }
+        .blocks { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .chip { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.35);
+                color: #fca5a5; border-radius: 999px; padding: 6px 14px; font-size: 13px; }
+        .chip.none { border-color: rgba(74,222,128,.35); color: #86efac; background: rgba(74,222,128,.08); }
+        .blocks .caption { font-size: 12px; color: #94a3b8; margin-left: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        th { text-align: left; color: #93c5fd; font-weight: 600; padding: 8px 10px;
+             border-bottom: 1px solid rgba(147,197,253,.25); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+        td { padding: 9px 10px; border-bottom: 1px solid rgba(147,197,253,.08); }
+        tr:hover td { background: rgba(147,197,253,.05); }
+        .pos { color: #4ade80; } .neg { color: #f87171; }
+        a.case-link { color: #7dd3fc; text-decoration: none; font-family: ui-monospace, monospace; font-size: 12.5px; }
+        a.case-link:hover { text-decoration: underline; }
+        .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+        .pill.recovered { background: rgba(74,222,128,.15); color: #4ade80; }
+        .pill.written_off { background: rgba(248,113,113,.15); color: #f87171; }
+        .pill.open, .pill.scheduled { background: rgba(147,197,253,.15); color: #93c5fd; }
+        .buttons { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+                 transition: all .3s ease; font-size: 14px; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(59,130,246,.4); }
+        .btn-secondary { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .btn-secondary:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(139,92,246,.4); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+                 align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: #1e293b; border-radius: 12px; padding: 32px; max-width: 500px;
+                         width: 100%; border: 1px solid rgba(147,197,253,.2); }
+        .modal-content h2 { color: #fff; font-size: 22px; font-weight: bold; margin-bottom: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { color: #93c5fd; font-size: 13px; font-weight: 500; display: block; margin-bottom: 8px; }
+        .form-group input { width: 100%; padding: 10px 12px; background: #334155; border: 1px solid #475569;
+                            border-radius: 6px; color: #fff; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #3b82f6; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .modal-buttons button { flex: 1; padding: 10px; }
+        .footer { text-align: center; color: #93c5fd; font-size: 13px;
+                  border-top: 1px solid rgba(147,197,253,.1); padding-top: 24px; }
+        .spinner { border: 4px solid rgba(147,197,253,.2); border-top: 4px solid #3b82f6; border-radius: 50%;
+                   width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Revenue Recovery Agent</h1>
+                <p>Incremental recovery vs randomized control — measured, not claimed</p>
+            </div>
+            <span class="badge" id="envBadge">loading…</span>
+        </div>
+
+        <div id="content">
+            <div class="loading"><div style="text-align:center"><div class="spinner"></div><p>Loading recovery metrics…</p></div></div>
+        </div>
+    </div>
+
+    <div id="calculatorModal" class="modal">
+        <div class="modal-content">
+            <h2>ROI Calculator</h2>
+            <div class="form-group">
+                <label for="amountAtRisk">Amount at risk (₹ Crore)</label>
+                <input type="number" id="amountAtRisk" value="10" step="0.1" min="0.1">
+            </div>
+            <div class="form-group">
+                <label for="baselineRecovery">Baseline recovery %</label>
+                <input type="number" id="baselineRecovery" value="20" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label for="estimatedLift">Estimated lift (pp)</label>
+                <input type="number" id="estimatedLift" value="50" min="0" max="100">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="calculateROI()">Calculate</button>
+                <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+
+        function fmtRupees(paise) {
+            if (paise == null || isNaN(paise)) return "—";
+            const r = paise / 100;
+            if (Math.abs(r) >= 1e7) return `₹${(r / 1e7).toFixed(2)} Cr`;
+            if (Math.abs(r) >= 1e5) return `₹${(r / 1e5).toFixed(2)} L`;
+            return `₹${r.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+        }
+        const pct = (x, d = 1) => ((x || 0) * 100).toFixed(d);
+        const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+        async function loadDashboard() {
+            try {
+                const [repRes, casesRes] = await Promise.all([
+                    fetch(`${API}/report`), fetch(`${API}/cases/recent?limit=12`)]);
+                if (!repRes.ok) throw new Error("report failed");
+                const rep = await repRes.json();          // NOTE: /report is the report itself, not {report: …}
+                const cases = casesRes.ok ? (await casesRes.json()).cases : [];
+                render(rep, cases);
+            } catch (e) {
+                document.getElementById("content").innerHTML =
+                    `<div class="error"><p>Failed to load report — is the API running at ${esc(API)}?</p></div>`;
+            }
+        }
+
+        function render(rep, cases) {
+            const hd = rep.headline || {}, batch = rep.batch || {}, cost = rep.cost || {};
+            const perClass = rep.per_class || {}, promises = rep.promises || {};
+            const ci = hd.incremental_recovery_ci95_pp || [0, 0];
+            const cpir = cost.cost_per_incremental_recovery_paise;
+            document.getElementById("envBadge").textContent =
+                `${batch.cases || 0} cases · ${(batch.treatment_n || 0)}T/${(batch.control_n || 0)}C`;
+
+            const blocks = rep.policy_transparency?.blocked_actions || {};
+            const blockChips = Object.entries(blocks).length
+                ? Object.entries(blocks).map(([k, v]) => `<span class="chip">${esc(k || "unknown")} · ${v}</span>`).join("")
+                : `<span class="chip none">no blocked actions</span>`;
+
+            const classRows = Object.entries(perClass).sort((a, b) => b[1].n - a[1].n).map(([cls, d]) => `
+                <tr><td>${esc(cls.replace(/_/g, " "))}</td><td>${d.n}</td>
+                <td class="pos">${pct(d.treatment_rate)}%</td><td>${pct(d.control_rate)}%</td>
+                <td class="${d.lift_pp >= 0 ? "pos" : "neg"}">${d.lift_pp >= 0 ? "+" : ""}${d.lift_pp} pp</td></tr>`).join("");
+
+            const caseRows = cases.map(c => `
+                <tr><td><a class="case-link" href="/audit/${esc(c.case_id)}" target="_blank">${esc(c.case_id)}</a></td>
+                <td>${esc(c.failure_class.replace(/_/g, " "))}</td>
+                <td>${fmtRupees(c.amount_paise)}</td>
+                <td><span class="pill ${esc(c.status)}">${esc(c.status.replace(/_/g, " "))}</span>${c.written_off_reason ? ` <span style="color:#94a3b8;font-size:11px">— ${esc(c.written_off_reason.replace(/_/g, " "))}</span>` : ""}</td>
+                <td>${c.recovered_amount_paise ? fmtRupees(c.recovered_amount_paise) : "—"}</td></tr>`).join("");
+
+            document.getElementById("content").innerHTML = `
+                <div class="grid metrics-grid">
+                    <div class="metric-card"><div class="metric-label">Recovery rate (treatment)</div>
+                        <div class="metric-value">${pct(hd.recovery_rate_treatment)}%</div>
+                        <div class="metric-sub muted">control ${pct(hd.recovery_rate_control)}%</div></div>
+                    <div class="metric-card"><div class="metric-label">Incremental lift</div>
+                        <div class="metric-value" style="color:#4ade80">+${(hd.incremental_recovery_pp || 0).toFixed(1)} pp</div>
+                        <div class="metric-sub">95% CI [+${ci[0]}, +${ci[1]}]</div></div>
+                    <div class="metric-card"><div class="metric-label">Incremental money recovered</div>
+                        <div class="metric-value">${fmtRupees(hd.incremental_money_paise)}</div>
+                        <div class="metric-sub muted">vs randomized control</div></div>
+                    <div class="metric-card"><div class="metric-label">Amount at risk</div>
+                        <div class="metric-value">${fmtRupees(batch.amount_at_risk_paise)}</div>
+                        <div class="metric-sub muted">across ${batch.cases || 0} cases</div></div>
+                </div>
+
+                <div class="grid compliance-grid">
+                    <div class="compliance-card honesty"><div class="label">Redundant-contact share</div>
+                        <div class="value">${pct(cost.redundant_contact_share, 0)}%</div>
+                        <div class="note">would have paid anyway — reported, not hidden</div></div>
+                    <div class="compliance-card"><div class="label">Opt-outs caused</div>
+                        <div class="value">${cost.opt_outs || 0}</div>
+                        <div class="note">every one honored globally</div></div>
+                    <div class="compliance-card"><div class="label">Promises-to-pay</div>
+                        <div class="value">${promises.received || 0}</div>
+                        <div class="note">${promises.keep_rate != null ? pct(promises.keep_rate, 0) + "% keep rate · " : ""}${fmtRupees(promises.money_via_promises_paise)} recovered</div></div>
+                    <div class="compliance-card"><div class="label">Contacts / spend</div>
+                        <div class="value">${cost.contacts_executed || 0}</div>
+                        <div class="note">${fmtRupees(cost.spend_paise)} total · ${cpir != null ? fmtRupees(cpir) : "—"} per incremental recovery</div></div>
+                </div>
+
+                <div class="grid charts-grid">
+                    <div class="chart-card"><h3>Recovery by failure class</h3>
+                        <canvas id="classChart" height="230"></canvas></div>
+                    <div class="chart-card"><h3>Where the spend went</h3>
+                        <canvas id="spendChart" height="230"></canvas></div>
+                </div>
+
+                <div class="chart-card" style="margin-bottom:24px"><h3>Policy gates that blocked actions</h3>
+                    <div class="blocks">${blockChips}<span class="caption">every block is audit-logged with its reason</span></div></div>
+
+                <div class="cases-card" style="margin-bottom:24px"><h3>Recent cases <span style="color:#94a3b8;font-size:12px;font-weight:400">(click a case for its full audit trail)</span></h3>
+                    <table><thead><tr><th>Case</th><th>Class</th><th>Amount</th><th>Status</th><th>Recovered</th></tr></thead>
+                    <tbody>${caseRows || '<tr><td colspan="5" style="color:#94a3b8">no cases yet</td></tr>'}</tbody></table></div>
+
+                <div class="buttons">
+                    <button class="btn-primary" onclick="openModal('calculatorModal')">ROI Calculator</button>
+                    <button class="btn-secondary" onclick="window.open('/docs', '_blank')">API Documentation</button>
+                </div>
+
+                <div class="footer">
+                    <p>Razorpay Revenue Recovery Agent v0.2.0 — every number on this page is computed from the append-only audit trail.</p>
+                    <p style="margin-top:8px;color:#60a5fa">Treatment/control split is stratified by failure class at ingest. Every decision is audited; every metric is honest.</p>
+                </div>`;
+
+            renderClassChart(perClass);
+            renderSpendChart(cost.cost_by_channel_paise || {});
+        }
+
+        function renderClassChart(perClass) {
+            const entries = Object.entries(perClass).sort((a, b) => b[1].lift_pp - a[1].lift_pp);
+            new Chart(document.getElementById("classChart"), {
+                type: "bar",
+                data: {
+                    labels: entries.map(([c]) => c.replace(/_/g, " ").toLowerCase()),
+                    datasets: [
+                        { label: "Treatment %", data: entries.map(([, d]) => pct(d.treatment_rate, 1)),
+                          backgroundColor: "#3b82f6", borderRadius: 6 },
+                        { label: "Control %", data: entries.map(([, d]) => pct(d.control_rate, 1)),
+                          backgroundColor: "#64748b", borderRadius: 6 }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: "#93c5fd" } } },
+                    scales: {
+                        x: { ticks: { color: "#93c5fd", font: { size: 10 } }, grid: { color: "rgba(147,197,253,.08)" } },
+                        y: { beginAtZero: true, max: 100, ticks: { color: "#93c5fd", callback: v => v + "%" },
+                             grid: { color: "rgba(147,197,253,.08)" } },
+                    },
+                },
+            });
+        }
+
+        function renderSpendChart(byChannel) {
+            const channels = Object.entries(byChannel).filter(([, v]) => v > 0)
+                .map(([k, v]) => ({ name: k[0].toUpperCase() + k.slice(1), value: v }));
+            if (!channels.length) {
+                document.getElementById("spendChart").outerHTML =
+                    '<p style="color:#94a3b8;text-align:center;padding:80px 0">No spend recorded yet</p>';
+                return;
+            }
+            new Chart(document.getElementById("spendChart"), {
+                type: "doughnut",
+                data: {
+                    labels: channels.map(c => `${c.name} · ${fmtRupees(c.value)}`),
+                    datasets: [{ data: channels.map(c => c.value),
+                                 backgroundColor: ["#38bdf8", "#4ade80", "#fbbf24", "#f87171", "#a78bfa"] }],
+                },
+                options: {
+                    responsive: true, cutout: "55%",
+                    plugins: { legend: { position: "bottom", labels: { color: "#93c5fd", padding: 14 } } },
+                },
+            });
+        }
+
+        async function calculateROI() {
+            const q = new URLSearchParams({
+                amount_at_risk_cr: document.getElementById("amountAtRisk").value,
+                baseline_recovery_pct: document.getElementById("baselineRecovery").value,
+                estimated_lift_pp: document.getElementById("estimatedLift").value,
+            });
+            try {
+                const r = await fetch(`${API}/calculator?${q}`);
+                if (!r.ok) throw new Error();
+                const out = await r.json();
+                alert(`ROI ESTIMATE\n\nIncremental recovery: ${out.incremental_recovery_display}\nProjected contacts: ${out.projected_contacts.toLocaleString("en-IN")}\nContact spend: ${fmtRupees(out.projected_contact_spend_paise)}\nCost per incremental recovery: ${fmtRupees(out.cost_per_incremental_recovery_paise)}\n\nAssumptions:\n- median case ${out.assumptions.median_case_amount}\n- touch costs from ${out.assumptions.cost_per_touch_source}`);
+            } catch (e) { alert("ROI calculation failed — check the inputs."); }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add("active"); }
+        function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape") document.querySelectorAll(".modal.active").forEach(m => m.classList.remove("active"));
+        });
+        document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("active"); }));
+
+        window.addEventListener("load", loadDashboard);
+    </script>
+</body>
+</html>

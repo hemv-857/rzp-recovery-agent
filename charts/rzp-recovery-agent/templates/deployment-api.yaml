@@ -1,0 +1,68 @@
+{{- $tokenSecret := .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    app: rzp-recovery-agent
+    component: api
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: rzp-recovery-agent
+      component: api
+  template:
+    metadata:
+      labels:
+        app: rzp-recovery-agent
+        component: api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: RECOVERY_DB
+              value: /app/data/recovery.db
+            - name: AGENT_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $tokenSecret }}
+                  key: AGENT_API_TOKEN
+            {{- if .Values.razorpay.keyId }}
+            - name: RAZORPAY_KEY_ID
+              value: {{ .Values.razorpay.keyId | quote }}
+            {{- end }}
+            {{- if .Values.razorpay.keySecret }}
+            - name: RAZORPAY_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $tokenSecret }}
+                  key: RAZORPAY_KEY_SECRET
+            {{- end }}
+            {{- if .Values.razorpay.webhookSecret }}
+            - name: RAZORPAY_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $tokenSecret }}
+                  key: RAZORPAY_WEBHOOK_SECRET
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /report
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data

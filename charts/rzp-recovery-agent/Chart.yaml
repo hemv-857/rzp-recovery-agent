@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rzp-recovery-agent
+description: Razorpay Revenue Recovery Agent — API + built-in tick scheduler
+type: application
+version: 0.1.0
+appVersion: "0.2.0"
