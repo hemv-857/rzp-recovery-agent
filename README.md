@@ -14,6 +14,26 @@ revenue at risk ──▶ classifier ──▶ case ──▶ selector ──▶
                        └───────── recovery / re-plan / escalate / write-off ◀──┘
 ```
 
+> **The pitch:** most recovery tools report gross recovered money. This agent
+> reports *incremental* recovered money against a randomized control group,
+> while every action is policy-gated, auditable, and stops safely through
+> opt-out or human escalation.
+
+## Judge Run — 5 minutes, no keys
+
+```bash
+# Terminal 1 — the agent
+RECOVERY_DB=demo.db RAZORPAY_WEBHOOK_SECRET=demo_secret .venv/bin/uvicorn app.main:app --port 8000
+
+# Terminal 2 — the walkthrough
+.venv/bin/python scripts/demo.py
+```
+
+Then open <http://localhost:8000/> — the demo signs a real failed-payment
+webhook, walks it through classification, the policy gate, a `kal pakka`
+promise, and a recovery, and lands on the measured lift and the per-case audit
+trail. Details: [`scripts/demo.py`](scripts/demo.py).
+
 ## The headline (2,000-case simulated batch, 9 loss classes)
 
 | metric | value |
