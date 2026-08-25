@@ -168,6 +168,27 @@ state persisted in a named volume:
 docker compose up --build          # dashboard on http://localhost:8000/
 ```
 
+## 5-minute demo (no keys, fully live)
+
+The whole loop — ingestion, classification, strategy, the policy gate, a
+customer promise, a recovery, and the measured proof — against a local server:
+
+```bash
+# terminal 1: the agent
+RECOVERY_DB=demo.db RAZORPAY_WEBHOOK_SECRET=demo_secret \
+    .venv/bin/uvicorn app.main:app --port 8000
+
+# terminal 2: the walkthrough
+.venv/bin/python scripts/demo.py
+```
+
+It signs a real `payment.failed` webhook (→ classification + salary-cycle
+strategy), shows real DEFER/BLOCK verdicts from the policy gate and the
+hard-decline stopping rule, sends `kal pakka` → promise-to-pay, then `paid` →
+recovery, and ends on `/report` and `/audit/{case_id}` — lift, CI, costs,
+blocks, and the full reasoning chain. Demo cases land in `demo.db`; the
+canonical report stays untouched.
+
 Set `AGENT_API_TOKEN` (e.g. in `.env`) and the scheduler sends it as
 `X-Agent-Token`; without a token the operator endpoints stay open — fine for
 localhost, never on a public URL.
