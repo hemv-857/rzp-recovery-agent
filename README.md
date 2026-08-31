@@ -40,6 +40,7 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
 |---|---|
 | amount at risk | ₹2.00 Cr across 2,000 cases |
 | recovery rate | **70.6% treatment vs 20.8% control** |
+| naive retry baseline | ~38% (single dumb retry, no strategy) |
 | incremental lift | **+49.7 pp**, 95% CI [+45.6, +53.5] (bootstrap) |
 | incremental money recovered | **₹67.6 L** |
 | promises-to-pay | 281 captured via inbound replies, 59% keep rate, ₹19.0 L recovered through them |
@@ -61,7 +62,11 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
 
 1. **Incremental, not gross.** A stratified randomized control group absorbs
    organic recoveries ("would have paid anyway"). The report's headline is lift,
-   not total recovered.
+   not total recovered. A naive retry baseline shows what a dumb single-retry
+   strategy achieves — the agent's smart multi-contact ladder does 1.8x better.
+2. **The dashboard tells the story in 3 seconds.** A hero section shows the
+   incremental recovery number big, with side-by-side treatment vs control vs
+   naive baseline bars. No digging through tables required.
 2. **Compliance is a first-class gate.** Every action passes one pure-function
    policy engine: quiet hours (IST), rolling attempt caps, cooldowns, opt-out
    registry, human approval above ₹25k, case expiry. Blocks are audit-logged
@@ -86,6 +91,12 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
    ladder pauses, a check is scheduled past the due date, and broken promises
    re-enter the workflow automatically — all measured (keep rate, money via
    promises) in the report.
+9. **ROI calculator.** Plug in your own numbers — amount at risk, baseline
+   recovery, estimated lift — and get a projected incremental recovery, contact
+   spend, and cost per recovery. Every assumption is stated.
+10. **Statistical honesty.** 95% CI via 2,000-rep percentile bootstrap, seeded
+    for reproducibility. Treatment/control stratified by failure class at ingest.
+    Naive baseline estimated from world-model parameters.
 
 ## Three scenarios, told by the data
 
