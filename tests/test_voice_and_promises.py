@@ -47,18 +47,19 @@ def test_low_value_invoice_stays_text(tmp_path):
 
 
 def test_voice_execution_places_call_and_sms_followthrough(tmp_path):
+    # 14:00 UTC = 19:30 IST — outside quiet hours [22, 8]
+    now = datetime(2026, 8, 15, 14, 0, tzinfo=timezone.utc)
     store = Store(tmp_path / "v.db")
     case = _invoice_case(50_000_000, attempts=2)
     case.attempt_times = [
-        (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        (now - timedelta(days=2)).isoformat()
     ] * 2                                  # past cooldown so the gate executes now
     store.upsert_case(case)
-    act = select_next_action(case, CFG, datetime.now(timezone.utc))
+    act = select_next_action(case, CFG, now)
     assert act.action_type is ActionType.NUDGE_VOICE
     store.save_action(act)
     from app.executor import ChannelAdapter
-    out, _ = execute_action(act, case, CFG, store, ChannelAdapter(),
-                            datetime.now(timezone.utc))
+    out, _ = execute_action(act, case, CFG, store, ChannelAdapter(), now)
     assert out.status.value == "executed"
     assert "STOP" in out.message_text                     # spoken opt-out footer
     assert out.reasoning["sms_followthrough"]["delivered"] is True

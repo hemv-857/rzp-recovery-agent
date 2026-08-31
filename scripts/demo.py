@@ -20,6 +20,7 @@ import hmac
 import json
 import sys
 import time
+import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -189,11 +190,16 @@ def main() -> None:
     print(f"\n    audit trail for the recovered case ({case1}):")
     show(httpx.get(f"{base}/audit/{case1}", timeout=15).json(),
          {"recovery.confirmed", "inbound.reply", "promise.scheduled_check"})
+
+    print("\n" + "=" * 68)
+    print("DASHBOARD")
+    print("=" * 68)
+    print(f"    opening {base}/ in your browser ...")
+    webbrowser.open(base)
     print(f"""
-    open these:
-      dashboard   {base}/
-      this case   {base}/audit/{case1}
-      api docs    {base}/docs
+    case audit   {base}/audit/{case1}
+    api docs     {base}/docs
+    calculator   {base}/  (ROI Calculator button)
     Demo cases live in demo.db — the canonical report.json is untouched.
 """)
 

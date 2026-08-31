@@ -22,6 +22,30 @@
             background: rgba(255,255,255,.05); backdrop-filter: blur(20px); border-radius: 12px;
             border: 1px solid rgba(147,197,253,.2); }
         .error { color: #f87171; }
+        .hero {
+            background: rgba(255,255,255,.06); backdrop-filter: blur(24px);
+            border-radius: 16px; padding: 32px 36px; margin-bottom: 28px;
+            border: 1px solid rgba(147,197,253,.25);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;
+        }
+        .hero-left .hero-label { color: #93c5fd; font-size: 13px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
+        .hero-left .hero-amount { font-size: 56px; font-weight: 800; color: #fff; line-height: 1.1; }
+        .hero-left .hero-sub { color: #4ade80; font-size: 16px; font-weight: 600; margin-top: 8px; }
+        .hero-left .hero-ci { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+        .hero-right { display: flex; flex-direction: column; gap: 16px; }
+        .hero-bar-group { }
+        .hero-bar-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .hero-bar-label span:first-child { color: #93c5fd; font-size: 13px; font-weight: 500; }
+        .hero-bar-label span:last-child { color: #fff; font-size: 22px; font-weight: 700; }
+        .hero-bar { height: 28px; background: rgba(255,255,255,.08); border-radius: 8px; overflow: hidden; position: relative; }
+        .hero-bar-fill { height: 100%; border-radius: 8px; transition: width 1.2s ease; }
+        .hero-bar-fill.treatment { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .hero-bar-fill.control { background: linear-gradient(90deg, #475569, #64748b); }
+        .hero-bar-fill.baseline { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .hero-delta { text-align: center; padding: 12px 0; }
+        .hero-delta .delta-value { font-size: 28px; font-weight: 800; color: #4ade80; }
+        .hero-delta .delta-label { color: #93c5fd; font-size: 12px; margin-top: 2px; }
+        @media (max-width: 768px) { .hero { grid-template-columns: 1fr; } .hero-left .hero-amount { font-size: 40px; } }
         .grid { display: grid; gap: 24px; margin-bottom: 24px; }
         .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
         .metric-card, .chart-card, .compliance-card, .cases-card {
@@ -104,22 +128,25 @@
     <div id="calculatorModal" class="modal">
         <div class="modal-content">
             <h2>ROI Calculator</h2>
-            <div class="form-group">
-                <label for="amountAtRisk">Amount at risk (₹ Crore)</label>
-                <input type="number" id="amountAtRisk" value="10" step="0.1" min="0.1">
+            <div id="roiForm">
+                <div class="form-group">
+                    <label for="amountAtRisk">Amount at risk (₹ Crore)</label>
+                    <input type="number" id="amountAtRisk" value="10" step="0.1" min="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="baselineRecovery">Baseline recovery %</label>
+                    <input type="number" id="baselineRecovery" value="20" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="estimatedLift">Estimated lift (pp)</label>
+                    <input type="number" id="estimatedLift" value="50" min="0" max="100">
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-primary" onclick="calculateROI()">Calculate</button>
+                    <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="baselineRecovery">Baseline recovery %</label>
-                <input type="number" id="baselineRecovery" value="20" min="0" max="100">
-            </div>
-            <div class="form-group">
-                <label for="estimatedLift">Estimated lift (pp)</label>
-                <input type="number" id="estimatedLift" value="50" min="0" max="100">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-primary" onclick="calculateROI()">Calculate</button>
-                <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
-            </div>
+            <div id="roiResult" style="display:none"></div>
         </div>
     </div>
 
@@ -175,7 +202,36 @@
                 <td><span class="pill ${esc(c.status)}">${esc(c.status.replace(/_/g, " "))}</span>${c.written_off_reason ? ` <span style="color:#94a3b8;font-size:11px">— ${esc(c.written_off_reason.replace(/_/g, " "))}</span>` : ""}</td>
                 <td>${c.recovered_amount_paise ? fmtRupees(c.recovered_amount_paise) : "—"}</td></tr>`).join("");
 
+            const naiveRate = (hd.naive_recovery_rate != null) ? hd.naive_recovery_rate : null;
+
             document.getElementById("content").innerHTML = `
+                <div class="hero">
+                    <div class="hero-left">
+                        <div class="hero-label">Incremental recovery vs control</div>
+                        <div class="hero-amount">${fmtRupees(hd.incremental_money_paise)}</div>
+                        <div class="hero-sub">+${(hd.incremental_recovery_pp || 0).toFixed(1)} percentage points lift</div>
+                        <div class="hero-ci">95% CI [+${ci[0]}, +${ci[1]}] · 2,000 bootstrap resamples</div>
+                    </div>
+                    <div class="hero-right">
+                        <div class="hero-bar-group">
+                            <div class="hero-bar-label"><span>Treatment (agent)</span><span>${pct(hd.recovery_rate_treatment)}%</span></div>
+                            <div class="hero-bar"><div class="hero-bar-fill treatment" style="width:${pct(hd.recovery_rate_treatment)}%"></div></div>
+                        </div>
+                        <div class="hero-bar-group">
+                            <div class="hero-bar-label"><span>Control (no agent)</span><span>${pct(hd.recovery_rate_control)}%</span></div>
+                            <div class="hero-bar"><div class="hero-bar-fill control" style="width:${pct(hd.recovery_rate_control)}%"></div></div>
+                        </div>
+                        ${naiveRate != null ? `<div class="hero-bar-group">
+                            <div class="hero-bar-label"><span>Naive retry baseline</span><span>${pct(naiveRate)}%</span></div>
+                            <div class="hero-bar"><div class="hero-bar-fill baseline" style="width:${pct(naiveRate)}%"></div></div>
+                        </div>` : ""}
+                        <div class="hero-delta">
+                            <div class="delta-value">+${fmtRupees(hd.incremental_money_paise)}</div>
+                            <div class="delta-label">money recovered that wouldn't have been</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid metrics-grid">
                     <div class="metric-card"><div class="metric-label">Recovery rate (treatment)</div>
                         <div class="metric-value">${pct(hd.recovery_rate_treatment)}%</div>
@@ -290,8 +346,46 @@
                 const r = await fetch(`${API}/calculator?${q}`);
                 if (!r.ok) throw new Error();
                 const out = await r.json();
-                alert(`ROI ESTIMATE\n\nIncremental recovery: ${out.incremental_recovery_display}\nProjected contacts: ${out.projected_contacts.toLocaleString("en-IN")}\nContact spend: ${fmtRupees(out.projected_contact_spend_paise)}\nCost per incremental recovery: ${fmtRupees(out.cost_per_incremental_recovery_paise)}\n\nAssumptions:\n- median case ${out.assumptions.median_case_amount}\n- touch costs from ${out.assumptions.cost_per_touch_source}`);
+                document.getElementById("roiForm").style.display = "none";
+                const res = document.getElementById("roiResult");
+                res.style.display = "block";
+                res.innerHTML = `
+                    <div style="text-align:center;padding:20px 0">
+                        <div style="color:#93c5fd;font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Incremental Recovery</div>
+                        <div style="font-size:40px;font-weight:800;color:#4ade80;margin-bottom:4px">${out.incremental_recovery_display}</div>
+                        <div style="color:#94a3b8;font-size:13px;margin-bottom:24px">money recovered that wouldn't have been</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
+                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">PROJECTED CONTACTS</div>
+                            <div style="color:#fff;font-size:20px;font-weight:700">${out.projected_contacts.toLocaleString("en-IN")}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
+                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">CONTACT SPEND</div>
+                            <div style="color:#fff;font-size:20px;font-weight:700">${fmtRupees(out.projected_contact_spend_paise)}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
+                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">COST / INCR. RECOVERY</div>
+                            <div style="color:#fff;font-size:20px;font-weight:700">${fmtRupees(out.cost_per_incremental_recovery_paise)}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
+                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">ROI MULTIPLE</div>
+                            <div style="color:#4ade80;font-size:20px;font-weight:700">${out.projected_contact_spend_paise > 0 ? (out.incremental_recovery_paise / out.projected_contact_spend_paise).toFixed(0) + "x" : "—"}</div>
+                        </div>
+                    </div>
+                    <div style="color:#94a3b8;font-size:11px;border-top:1px solid rgba(147,197,253,.15);padding-top:12px">
+                        assumptions: median case ${out.assumptions.median_case_amount} · ${out.assumptions.cost_per_touch_source}
+                    </div>
+                    <div class="modal-buttons" style="margin-top:16px">
+                        <button class="btn-secondary" onclick="resetROI()">Recalculate</button>
+                        <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
+                    </div>`;
             } catch (e) { alert("ROI calculation failed — check the inputs."); }
+        }
+
+        function resetROI() {
+            document.getElementById("roiForm").style.display = "block";
+            document.getElementById("roiResult").style.display = "none";
         }
 
         function openModal(id) { document.getElementById(id).classList.add("active"); }

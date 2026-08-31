@@ -136,6 +136,7 @@ def build_report(cases: list[RecoveryCase], actions_rows: list[dict],
             "incremental_recovery_ci95_pp": [round(lo, 2), round(hi, 2)],
             "incremental_money_paise": round(incremental_paise),
             "incremental_recoveries_est": round(incremental_recoveries),
+            "naive_recovery_rate": round(naive_baseline(cases, cfg), 4),
         },
         "cost": {
             "spend_paise": spend_paise,
@@ -157,7 +158,40 @@ def build_report(cases: list[RecoveryCase], actions_rows: list[dict],
             "blocked_actions": dict(blocked),
         },
         "per_class": per_class,
+        "statistical_note": (
+            "95% CI via 2,000-rep percentile bootstrap, seeded for reproducibility. "
+            "Treatment/control stratified by failure class at ingest. "
+            "Naive baseline estimated from world-model parameters (organic + single retry)."
+        ),
     }
+
+
+def naive_baseline(cases: list[RecoveryCase], cfg: dict) -> float:
+    """Estimate what a single dumb retry (one payment link, no strategy) recovers.
+
+    Approximates: organic_rate + first_contact_lift_per_class, weighted by class.
+    Honest lower bound — the agent's multi-contact strategy does better.
+    """
+    from collections import defaultdict
+    by_class: dict[str, list[RecoveryCase]] = defaultdict(list)
+    for c in cases:
+        by_class[c.failure_class.value].append(c)
+
+    base_probs = cfg.get("world", {}).get("base_pay_probability", {})
+    channel_eff = cfg.get("world", {}).get("channel_effectiveness", {}).get("payment_link", 0.8)
+    control_scale = cfg.get("world", {}).get("control_baseline_scale", 1.0)
+
+    total_n = len(cases)
+    naive_recovered = 0.0
+    for cls, cls_cases in by_class.items():
+        base_p = base_probs.get(cls, 0.2)
+        organic_p = base_p * control_scale
+        # first contact recovery: base * channel_eff, minus organic overlap
+        contact_p = min(base_p * channel_eff, 0.95)
+        combined_p = organic_p + contact_p * (1 - organic_p)
+        naive_recovered += len(cls_cases) * combined_p
+
+    return naive_recovered / total_n if total_n else 0.0
 
 
 def classification_eval(payments: list[FailedPayment]) -> dict[str, Any]:
