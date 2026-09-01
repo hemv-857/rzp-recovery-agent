@@ -98,6 +98,14 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
     for reproducibility. Treatment/control stratified by failure class at ingest.
     Naive baseline estimated from world-model parameters.
 
+## Razorpay Integration
+
+Custom lightweight client implements Payment Links API, Webhook API,
+and HMAC authentication (`app/razorpay_client.py`). Supports both live
+test-mode and offline simulation — no keys required for demos. The client
+is ~80 LOC, focused on recovery workflows only (payment links, webhook
+verification), with zero unnecessary dependencies.
+
 ## Three scenarios, told by the data
 
 **Insufficient funds on the 25th → salary-cycle retry.** The classifier tags
