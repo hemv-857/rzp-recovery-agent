@@ -288,6 +288,8 @@ the delivery sink and payment-link creation, which are stubs.
 | `app/razorpay_client.py` | Razorpay test-mode HTTP client / recording stub |
 | `app/notifier.py` | Slack ops alerts (escalations, opt-outs) — best-effort |
 | `app/static/dashboard.html` | Dashboard (vendored Chart.js — no CDN, works offline) |
+| `app/report_html.py` | Dependency-free fallback dashboard if the static bundle is missing |
+| `integrations/` | Mock voice BSP for live demos (no credentials needed) |
 | **Deployment** | |
 | `Dockerfile` | Container image (tzdata for IST quiet hours) |
 | `docker-compose.yml` | API + built-in /tick scheduler + persistent volume |
@@ -297,6 +299,7 @@ the delivery sink and payment-link creation, which are stubs.
 | `configs/templates/` | Merchant presets (B2B receivables / SaaS subs / D2C checkout) |
 | `scripts/run_batch.py` | End-to-end demo → report.json |
 | `scripts/quickstart.sh` | One command: venv → deps → batch → results |
+| `docs/dashboard.png` | Live screenshot of the report dashboard |
 | `COMPLIANCE.md` | Messaging compliance + data handling, claim-by-claim |
 | `DEPLOYMENT_CHECKLIST.md` | Pre-production verification, every item with its check |
 | `FUTURE_ROADMAP.md` | Vulcan integration story — layers, seams, honest caveats |
