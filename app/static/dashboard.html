@@ -290,9 +290,11 @@
             renderSpendChart(cost.cost_by_channel_paise || {});
         }
 
+        const _charts = {};
         function renderClassChart(perClass) {
+            if (_charts.class) _charts.class.destroy();
             const entries = Object.entries(perClass).sort((a, b) => b[1].lift_pp - a[1].lift_pp);
-            new Chart(document.getElementById("classChart"), {
+            _charts.class = new Chart(document.getElementById("classChart"), {
                 type: "bar",
                 data: {
                     labels: entries.map(([c]) => c.replace(/_/g, " ").toLowerCase()),
@@ -315,6 +317,7 @@
         }
 
         function renderSpendChart(byChannel) {
+            if (_charts.spend) _charts.spend.destroy();
             const channels = Object.entries(byChannel).filter(([, v]) => v > 0)
                 .map(([k, v]) => ({ name: k[0].toUpperCase() + k.slice(1), value: v }));
             if (!channels.length) {
@@ -322,7 +325,7 @@
                     '<p style="color:#94a3b8;text-align:center;padding:80px 0">No spend recorded yet</p>';
                 return;
             }
-            new Chart(document.getElementById("spendChart"), {
+            _charts.spend = new Chart(document.getElementById("spendChart"), {
                 type: "doughnut",
                 data: {
                     labels: channels.map(c => `${c.name} · ${fmtRupees(c.value)}`),

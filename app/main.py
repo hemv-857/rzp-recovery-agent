@@ -53,6 +53,8 @@ _STATIC = Path(__file__).parent / "static"
 if _STATIC.is_dir():
     app.mount("/static", StaticFiles(directory=_STATIC), name="static")
 
+_DASHBOARD_HTML: str | None = None
+
 
 def _cfg() -> dict:
     # read at call time so RECOVERY_CONFIG/RECOVERY_DB can be set per-process
@@ -256,8 +258,8 @@ async def inbound_reply(request: Request) -> dict:
     anything else -> ignored but audited.
     """
     body = await request.json()
-    text = str(body.get("text", ""))
-    phone = str(body.get("from", body.get("wa_id", "")))
+    text = str(body.get("text", ""))[:1000]
+    phone = str(body.get("from", body.get("wa_id", "")))[:20]
     parsed = parse_reply(text)
 
     store = _store()
@@ -447,9 +449,12 @@ def recent_cases(limit: int = 25) -> dict[str, Any]:
 def dashboard() -> HTMLResponse:
     """Rich dashboard (Chart.js, vendored offline). Falls back to the
     dependency-free server-rendered report if the static bundle is missing."""
+    global _DASHBOARD_HTML
     index = _STATIC / "dashboard.html"
     if index.is_file():
-        return HTMLResponse(index.read_text())
+        if _DASHBOARD_HTML is None:
+            _DASHBOARD_HTML = index.read_text()
+        return HTMLResponse(_DASHBOARD_HTML)
     store = _store()
     cases = store.all_cases()
     rep = build_report(cases, store.actions_rows(), _cfg())
