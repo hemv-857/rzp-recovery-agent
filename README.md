@@ -264,42 +264,43 @@ the delivery sink and payment-link creation, which are stubs.
 
 ## Repo map
 
-```
-app/
-  models.py           domain models (money = integer paise everywhere)
-  store.py            SQLite persistence + audit log
-  notifier.py         Slack ops alerts (escalations, opt-outs) — best-effort
-  razorpay_client.py  test-mode HTTP client / recording stub
-  classifier.py       error codes -> FailureClass (+confidence); optional LLM fallback
-  classifier_vulcan.py optional Vulcan foundation-model adapter (env-gated, falls back to rules)
-  selector.py         failure-aware intervention choice (next best action)
-  policy.py           compliance/stopping rules — pure functions, unit-tested
-  executor.py         runs actions through the gate; voice + channel adapters
-  copywriter.py       Hinglish templates + TTS call scripts + opt-out footer
-  promisetopay.py     inbound-reply intent parser (kal / parso / tarikh / STOP / paid)
-  agent.py            ingest -> plan -> recover/write-off state machine
-  measure.py          incremental-lift math, bootstrap CI, per-class breakdown
-  static/dashboard.html  the dashboard (Chart.js vendored in static/vendor — no CDN, works offline)
-  report_html.py      dependency-free fallback dashboard if the static bundle is missing
-  main.py             FastAPI: webhooks, inbound replies, approvals, tick, audit, report, /cases/recent
-simulate/
-  world.py            latent customer-behaviour model (organic + response + promises)
-  batch_generator.py  synthetic cohort w/ realistic Indian failure mix
-  engine.py           discrete-event simulation of the full loop
-scripts/run_batch.py  end-to-end demo -> report.json
-scripts/quickstart.sh one command: venv -> deps -> batch -> results
-configs/templates/    merchant presets (B2B receivables / SaaS subs / D2C checkout)
-integrations/         mock voice BSP for live demos (no credentials needed)
-docs/dashboard.png    live screenshot of the report dashboard
-Dockerfile            container image (tzdata included for IST quiet hours)
-docker-compose.yml    API + built-in /tick scheduler + persistent volume
-charts/               Helm chart: api + ticker + PVC, secrets wired
-.github/workflows/    CI (lint+smoke+tests) and ghcr.io image publishing
-COMPLIANCE.md         messaging compliance + data handling, claim-by-claim
-DEPLOYMENT_CHECKLIST.md  pre-production verification, every item with its check
-FUTURE_ROADMAP.md     Vulcan integration story — layers, seams, honest caveats
-tests/                policy edges, classifier, parser, voice, promises, e2e smoke
-```
+| Path | Purpose |
+|---|---|
+| **Core agent** | |
+| `app/agent.py` | Ingest → plan → recover/write-off state machine |
+| `app/classifier.py` | Error codes → FailureClass (+confidence); optional LLM fallback |
+| `app/classifier_vulcan.py` | Vulcan foundation-model adapter (env-gated, falls back to rules) |
+| `app/selector.py` | Failure-aware intervention choice (next best action) |
+| `app/executor.py` | Runs actions through the policy gate; voice + channel adapters |
+| `app/policy.py` | Compliance/stopping rules — pure functions, unit-tested |
+| `app/copywriter.py` | Hinglish templates + TTS call scripts + opt-out footer |
+| `app/promisetopay.py` | Inbound-reply intent parser (kal / parso / tarikh / STOP / paid) |
+| **Data & measurement** | |
+| `app/models.py` | Domain models (money = integer paise everywhere) |
+| `app/store.py` | SQLite persistence + audit log |
+| `app/measure.py` | Incremental-lift math, bootstrap CI, per-class breakdown |
+| **Simulation** | |
+| `simulate/world.py` | Latent customer-behaviour model (organic + response + promises) |
+| `simulate/batch_generator.py` | Synthetic cohort with realistic Indian failure mix |
+| `simulate/engine.py` | Discrete-event simulation of the full loop |
+| **Interfaces** | |
+| `app/main.py` | FastAPI: webhooks, inbound replies, approvals, tick, audit, report |
+| `app/razorpay_client.py` | Razorpay test-mode HTTP client / recording stub |
+| `app/notifier.py` | Slack ops alerts (escalations, opt-outs) — best-effort |
+| `app/static/dashboard.html` | Dashboard (vendored Chart.js — no CDN, works offline) |
+| **Deployment** | |
+| `Dockerfile` | Container image (tzdata for IST quiet hours) |
+| `docker-compose.yml` | API + built-in /tick scheduler + persistent volume |
+| `charts/` | Helm chart: api + ticker + PVC, secrets wired |
+| `.github/workflows/` | CI (lint+smoke+tests) and ghcr.io image publishing |
+| **Config & docs** | |
+| `configs/templates/` | Merchant presets (B2B receivables / SaaS subs / D2C checkout) |
+| `scripts/run_batch.py` | End-to-end demo → report.json |
+| `scripts/quickstart.sh` | One command: venv → deps → batch → results |
+| `COMPLIANCE.md` | Messaging compliance + data handling, claim-by-claim |
+| `DEPLOYMENT_CHECKLIST.md` | Pre-production verification, every item with its check |
+| `FUTURE_ROADMAP.md` | Vulcan integration story — layers, seams, honest caveats |
+| `tests/` | Policy edges, classifier, parser, voice, promises, e2e smoke |
 
 ## Known limits (read before judging)
 
