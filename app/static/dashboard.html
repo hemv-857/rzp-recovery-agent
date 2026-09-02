@@ -3,402 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Razorpay Revenue Recovery Agent — Dashboard</title>
+    <title>Revenue Recovery Agent — Dashboard</title>
     <script src="/static/vendor/chart.umd.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
-            color: #e0e7ff; min-height: 100vh; padding: 24px;
-        }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
-        .header h1 { font-size: 32px; font-weight: bold; color: #fff; }
-        .header p { color: #93c5fd; font-size: 14px; margin-top: 6px; }
-        .badge { font-size: 11px; letter-spacing: .08em; padding: 5px 10px; border-radius: 999px;
-                 border: 1px solid rgba(147,197,253,.35); color: #93c5fd; text-transform: uppercase; }
-        .loading, .error { display: flex; align-items: center; justify-content: center; min-height: 400px;
-            background: rgba(255,255,255,.05); backdrop-filter: blur(20px); border-radius: 12px;
-            border: 1px solid rgba(147,197,253,.2); }
-        .error { color: #f87171; }
-        .hero {
-            background: rgba(255,255,255,.06); backdrop-filter: blur(24px);
-            border-radius: 16px; padding: 32px 36px; margin-bottom: 28px;
-            border: 1px solid rgba(147,197,253,.25);
-            display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center;
-        }
-        .hero-left .hero-label { color: #93c5fd; font-size: 13px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
-        .hero-left .hero-amount { font-size: 56px; font-weight: 800; color: #fff; line-height: 1.1; }
-        .hero-left .hero-sub { color: #4ade80; font-size: 16px; font-weight: 600; margin-top: 8px; }
-        .hero-left .hero-ci { color: #94a3b8; font-size: 13px; margin-top: 4px; }
-        .hero-right { display: flex; flex-direction: column; gap: 16px; }
-        .hero-bar-group { }
-        .hero-bar-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-        .hero-bar-label span:first-child { color: #93c5fd; font-size: 13px; font-weight: 500; }
-        .hero-bar-label span:last-child { color: #fff; font-size: 22px; font-weight: 700; }
-        .hero-bar { height: 28px; background: rgba(255,255,255,.08); border-radius: 8px; overflow: hidden; position: relative; }
-        .hero-bar-fill { height: 100%; border-radius: 8px; transition: width 1.2s ease; }
-        .hero-bar-fill.treatment { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-        .hero-bar-fill.control { background: linear-gradient(90deg, #475569, #64748b); }
-        .hero-bar-fill.baseline { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .hero-delta { text-align: center; padding: 12px 0; }
-        .hero-delta .delta-value { font-size: 28px; font-weight: 800; color: #4ade80; }
-        .hero-delta .delta-label { color: #93c5fd; font-size: 12px; margin-top: 2px; }
-        @media (max-width: 768px) { .hero { grid-template-columns: 1fr; } .hero-left .hero-amount { font-size: 40px; } }
-        .grid { display: grid; gap: 24px; margin-bottom: 24px; }
-        .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-        .metric-card, .chart-card, .compliance-card, .cases-card {
-            background: rgba(255,255,255,.05); backdrop-filter: blur(20px);
-            border-radius: 12px; padding: 24px; border: 1px solid rgba(147,197,253,.2);
-            transition: all .3s ease;
-        }
-        .metric-card:hover { border-color: rgba(147,197,253,.4); transform: translateY(-2px); }
-        .metric-label { color: #93c5fd; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
-        .metric-value { font-size: 32px; font-weight: bold; color: #fff; margin-bottom: 6px; }
-        .metric-sub { font-size: 12px; color: #4ade80; }
-        .metric-sub.muted { color: #94a3b8; }
-        .charts-grid { grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); }
-        .chart-card h3, .cases-card h3 { color: #fff; font-size: 17px; font-weight: 600; margin-bottom: 18px; }
-        .compliance-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-        .compliance-card .label { color: #93c5fd; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
-        .compliance-card .value { font-size: 24px; font-weight: bold; color: #fff; }
-        .compliance-card .note { font-size: 11px; color: #94a3b8; margin-top: 8px; }
-        .honesty { border-left: 3px solid #fbbf24; }
-        .blocks { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .chip { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.35);
-                color: #fca5a5; border-radius: 999px; padding: 6px 14px; font-size: 13px; }
-        .chip.none { border-color: rgba(74,222,128,.35); color: #86efac; background: rgba(74,222,128,.08); }
-        .blocks .caption { font-size: 12px; color: #94a3b8; margin-left: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        th { text-align: left; color: #93c5fd; font-weight: 600; padding: 8px 10px;
-             border-bottom: 1px solid rgba(147,197,253,.25); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
-        td { padding: 9px 10px; border-bottom: 1px solid rgba(147,197,253,.08); }
-        tr:hover td { background: rgba(147,197,253,.05); }
-        .pos { color: #4ade80; } .neg { color: #f87171; }
-        a.case-link { color: #7dd3fc; text-decoration: none; font-family: ui-monospace, monospace; font-size: 12.5px; }
-        a.case-link:hover { text-decoration: underline; }
-        .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-        .pill.recovered { background: rgba(74,222,128,.15); color: #4ade80; }
-        .pill.written_off { background: rgba(248,113,113,.15); color: #f87171; }
-        .pill.open, .pill.scheduled { background: rgba(147,197,253,.15); color: #93c5fd; }
-        .buttons { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
-        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
-                 transition: all .3s ease; font-size: 14px; }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(59,130,246,.4); }
-        .btn-secondary { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
-        .btn-secondary:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(139,92,246,.4); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
-                 align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .modal.active { display: flex; }
-        .modal-content { background: #1e293b; border-radius: 12px; padding: 32px; max-width: 500px;
-                         width: 100%; border: 1px solid rgba(147,197,253,.2); }
-        .modal-content h2 { color: #fff; font-size: 22px; font-weight: bold; margin-bottom: 24px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { color: #93c5fd; font-size: 13px; font-weight: 500; display: block; margin-bottom: 8px; }
-        .form-group input { width: 100%; padding: 10px 12px; background: #334155; border: 1px solid #475569;
-                            border-radius: 6px; color: #fff; font-size: 14px; }
-        .form-group input:focus { outline: none; border-color: #3b82f6; }
-        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .modal-buttons button { flex: 1; padding: 10px; }
-        .footer { text-align: center; color: #93c5fd; font-size: 13px;
-                  border-top: 1px solid rgba(147,197,253,.1); padding-top: 24px; }
-        .spinner { border: 4px solid rgba(147,197,253,.2); border-top: 4px solid #3b82f6; border-radius: 50%;
-                   width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+        :root{--bg:#0a0f1a;--card:rgba(255,255,255,.04);--card-hover:rgba(255,255,255,.07);--bdr:rgba(255,255,255,.08);--bdr-h:rgba(255,255,255,.15);--txt:#f1f5f9;--sec:#94a3b8;--dim:#64748b;--grn:#22c55e;--blu:#3b82f6;--pur:#a78bfa;--red:#ef4444;--yel:#eab308;--cyn:#06b6d4}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes slideR{from{width:0}}
+        @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(59,130,246,.08)}50%{box-shadow:0 0 40px rgba(59,130,246,.18)}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+        @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+        .a-fu{animation:fadeUp .5s ease both}.a-fi{animation:fadeIn .4s ease both}.a-sc{animation:scaleIn .4s ease both}
+        .d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}.d4{animation-delay:.2s}.d5{animation-delay:.25s}.d6{animation-delay:.3s}
+        .topbar{background:rgba(10,15,26,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+        .tb-brand{display:flex;align-items:center;gap:12px}
+        .tb-logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--blu),var(--pur));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px}
+        .tb-title{font-size:16px;font-weight:700}.tb-sub{font-size:11px;color:var(--dim)}
+        .tb-acts{display:flex;gap:10px;align-items:center}
+        .badge{font-size:10px;letter-spacing:.06em;padding:4px 10px;border-radius:999px;border:1px solid rgba(34,197,94,.4);color:var(--grn);text-transform:uppercase;font-weight:600}
+        .ctr{max-width:1400px;margin:0 auto;padding:28px 32px}
+        .hero{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:32px 36px;margin-bottom:24px;display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center;transition:border-color .3s}
+        .hero:hover{border-color:var(--bdr-h)}
+        .h-label{color:var(--sec);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+        .h-amt{font-size:48px;font-weight:800;line-height:1.1}
+        .h-sub{color:var(--grn);font-size:15px;font-weight:600;margin-top:8px}
+        .h-ci{color:var(--dim);font-size:12px;margin-top:4px}
+        .bar-g{margin-bottom:14px}
+        .bar-l{display:flex;justify-content:space-between;margin-bottom:5px}
+        .bar-l span:first-child{color:var(--sec);font-size:12px;font-weight:500}
+        .bar-l span:last-child{color:var(--txt);font-size:18px;font-weight:700}
+        .bar{height:22px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden}
+        .bf{height:100%;border-radius:6px;animation:slideR 1.2s ease both}
+        .bf.t{background:linear-gradient(90deg,#3b82f6,#60a5fa)}.bf.c{background:linear-gradient(90deg,#475569,#64748b)}.bf.n{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+        .h-delta{text-align:center;padding:10px 0}
+        .h-dv{font-size:26px;font-weight:800;color:var(--grn)}
+        .h-dl{color:var(--sec);font-size:12px;margin-top:2px}
+        .grid{display:grid;gap:20px;margin-bottom:20px}
+        .m4{grid-template-columns:repeat(4,1fr)}.m2{grid-template-columns:repeat(2,1fr)}
+        @media(max-width:1024px){.m4{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}}
+        @media(max-width:600px){.m4{grid-template-columns:1fr}.ctr{padding:16px}}
+        .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:22px;transition:all .25s ease}
+        .card:hover{border-color:var(--bdr-h);background:var(--card-hover)}
+        .card-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+        .card-t{font-size:14px;font-weight:600}
+        .card-b{font-size:10px;color:var(--dim);padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05)}
+        .ml{color:var(--sec);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+        .mv{font-size:28px;font-weight:700;margin-bottom:4px}
+        .ms{font-size:12px;color:var(--grn)}.ms.m{color:var(--dim)}
+        .cg{grid-template-columns:repeat(4,1fr)}
+        .cc .lb{color:var(--sec);font-size:11px;font-weight:500;margin-bottom:6px;text-transform:uppercase}
+        .cc .vl{font-size:22px;font-weight:700}.cc .nt{font-size:11px;color:var(--dim);margin-top:6px}
+        .cc.hon{border-left:3px solid var(--yel)}
+        .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .chip{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:999px;padding:4px 12px;font-size:12px}
+        .chip.ok{border-color:rgba(34,197,94,.25);color:#86efac;background:rgba(34,197,94,.06)}
+        .chips .cap{font-size:11px;color:var(--dim);margin-left:auto}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{text-align:left;color:var(--sec);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+        td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+        tr:hover td{background:rgba(255,255,255,.03)}
+        .pos{color:var(--grn)}.neg{color:var(--red)}
+        a.cl{color:#7dd3fc;text-decoration:none;font-family:ui-monospace,monospace;font-size:12px}
+        a.cl:hover{text-decoration:underline}
+        .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+        .pill.recovered{background:rgba(34,197,94,.12);color:var(--grn)}
+        .pill.written_off{background:rgba(239,68,68,.12);color:var(--red)}
+        .pill.open,.pill.scheduled{background:rgba(147,197,253,.12);color:var(--sec)}
+        .btns{display:flex;gap:10px;flex-wrap:wrap}
+        button{padding:10px 18px;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all .2s;font-size:13px;font-family:inherit}
+        .bp{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+        .bp:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(59,130,246,.3)}
+        .bs{background:rgba(255,255,255,.06);color:var(--sec);border:1px solid var(--bdr)}
+        .bs:hover{background:rgba(255,255,255,.1)}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:1000;padding:20px}
+        .modal.on{display:flex}
+        .modal-c{background:#1e293b;border-radius:12px;padding:28px;max-width:460px;width:100%;border:1px solid var(--bdr)}
+        .modal-c h2{font-size:18px;font-weight:700;margin-bottom:20px}
+        .fg{margin-bottom:14px}
+        .fg label{color:var(--sec);font-size:12px;font-weight:500;display:block;margin-bottom:5px}
+        .fg input{width:100%;padding:10px 12px;background:#334155;border:1px solid #475569;border-radius:6px;color:var(--txt);font-size:14px}
+        .fg input:focus{outline:none;border-color:var(--blu)}
+        .mb{display:flex;gap:10px;margin-top:18px}.mb button{flex:1;padding:10px}
+        .ftr{text-align:center;color:var(--dim);font-size:12px;border-top:1px solid var(--bdr);padding-top:20px;margin-top:28px}
+        .ftr a{color:var(--blu);text-decoration:none}
+        .spinner{border:3px solid var(--bdr);border-top:3px solid var(--blu);border-radius:50%;width:32px;height:32px;animation:spin .8s linear infinite;margin:0 auto 12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .ld,.err{display:flex;align-items:center;justify-content:center;min-height:400px;background:var(--card);border-radius:12px;border:1px solid var(--bdr)}
+        .err{color:var(--red)}
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Revenue Recovery Agent</h1>
-                <p>Incremental recovery vs randomized control — measured, not claimed</p>
+    <div id="root"></div>
+    <script type="text/babel">
+    const {useState,useEffect,useRef,useCallback} = React;
+    const API = location.origin;
+    const fmt = p => {if(p==null||isNaN(p))return"—";const r=p/100;if(Math.abs(r)>=1e7)return`₹${(r/1e7).toFixed(2)} Cr`;if(Math.abs(r)>=1e5)return`₹${(r/1e5).toFixed(2)} L`;return`₹${r.toLocaleString("en-IN",{maximumFractionDigits:0})}`};
+    const pct = (x,d=1)=>((x||0)*100).toFixed(d);
+    const esc = s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+    function useAnimatedNumber(target, duration=1200) {
+        const [val, setVal] = useState(0);
+        const ref = useRef(null);
+        useEffect(() => {
+            const start = performance.now();
+            const from = val;
+            const tick = now => {
+                const t = Math.min((now - start) / duration, 1);
+                const ease = 1 - Math.pow(1 - t, 3);
+                setVal(from + (target - from) * ease);
+                if (t < 1) ref.current = requestAnimationFrame(tick);
+            };
+            ref.current = requestAnimationFrame(tick);
+            return () => cancelAnimationFrame(ref.current);
+        }, [target]);
+        return val;
+    }
+
+    function TopBar({cases, treatment, control}) {
+        return (
+            <div className="topbar">
+                <div className="tb-brand">
+                    <div className="tb-logo">R</div>
+                    <div><div className="tb-title">Revenue Recovery Agent</div><div className="tb-sub">Razorpay AI Buildathon 2026 — Track 03</div></div>
+                </div>
+                <div className="tb-acts">
+                    <span className="badge">{cases} cases · {treatment}T/{control}C</span>
+                </div>
             </div>
-            <span class="badge" id="envBadge">loading…</span>
-        </div>
+        );
+    }
 
-        <div id="content">
-            <div class="loading"><div style="text-align:center"><div class="spinner"></div><p>Loading recovery metrics…</p></div></div>
-        </div>
-    </div>
-
-    <div id="calculatorModal" class="modal">
-        <div class="modal-content">
-            <h2>ROI Calculator</h2>
-            <div id="roiForm">
-                <div class="form-group">
-                    <label for="amountAtRisk">Amount at risk (₹ Crore)</label>
-                    <input type="number" id="amountAtRisk" value="10" step="0.1" min="0.1">
+    function Hero({hd, naiveRate}) {
+        const ci = hd.incremental_recovery_ci95_pp || [0,0];
+        const lift = hd.incremental_recovery_pp || 0;
+        return (
+            <div className="hero a-fu">
+                <div>
+                    <div className="h-label">Incremental recovery vs control</div>
+                    <div className="h-amt">{fmt(hd.incremental_money_paise)}</div>
+                    <div className="h-sub">+{lift.toFixed(1)} percentage points lift</div>
+                    <div className="h-ci">95% CI [+{ci[0]}, +{ci[1]}] · 2,000 bootstrap resamples</div>
                 </div>
-                <div class="form-group">
-                    <label for="baselineRecovery">Baseline recovery %</label>
-                    <input type="number" id="baselineRecovery" value="20" min="0" max="100">
-                </div>
-                <div class="form-group">
-                    <label for="estimatedLift">Estimated lift (pp)</label>
-                    <input type="number" id="estimatedLift" value="50" min="0" max="100">
-                </div>
-                <div class="modal-buttons">
-                    <button class="btn-primary" onclick="calculateROI()">Calculate</button>
-                    <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
-                </div>
-            </div>
-            <div id="roiResult" style="display:none"></div>
-        </div>
-    </div>
-
-    <script>
-        const API = window.location.origin;
-
-        function fmtRupees(paise) {
-            if (paise == null || isNaN(paise)) return "—";
-            const r = paise / 100;
-            if (Math.abs(r) >= 1e7) return `₹${(r / 1e7).toFixed(2)} Cr`;
-            if (Math.abs(r) >= 1e5) return `₹${(r / 1e5).toFixed(2)} L`;
-            return `₹${r.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-        }
-        const pct = (x, d = 1) => ((x || 0) * 100).toFixed(d);
-        const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-        async function loadDashboard() {
-            try {
-                const [repRes, casesRes] = await Promise.all([
-                    fetch(`${API}/report`), fetch(`${API}/cases/recent?limit=12`)]);
-                if (!repRes.ok) throw new Error("report failed");
-                const rep = await repRes.json();          // NOTE: /report is the report itself, not {report: …}
-                const cases = casesRes.ok ? (await casesRes.json()).cases : [];
-                render(rep, cases);
-            } catch (e) {
-                document.getElementById("content").innerHTML =
-                    `<div class="error"><p>Failed to load report — is the API running at ${esc(API)}?</p></div>`;
-            }
-        }
-
-        function render(rep, cases) {
-            const hd = rep.headline || {}, batch = rep.batch || {}, cost = rep.cost || {};
-            const perClass = rep.per_class || {}, promises = rep.promises || {};
-            const ci = hd.incremental_recovery_ci95_pp || [0, 0];
-            const cpir = cost.cost_per_incremental_recovery_paise;
-            document.getElementById("envBadge").textContent =
-                `${batch.cases || 0} cases · ${(batch.treatment_n || 0)}T/${(batch.control_n || 0)}C`;
-
-            const blocks = rep.policy_transparency?.blocked_actions || {};
-            const blockChips = Object.entries(blocks).length
-                ? Object.entries(blocks).map(([k, v]) => `<span class="chip">${esc(k || "unknown")} · ${v}</span>`).join("")
-                : `<span class="chip none">no blocked actions</span>`;
-
-            const classRows = Object.entries(perClass).sort((a, b) => b[1].n - a[1].n).map(([cls, d]) => `
-                <tr><td>${esc(cls.replace(/_/g, " "))}</td><td>${d.n}</td>
-                <td class="pos">${pct(d.treatment_rate)}%</td><td>${pct(d.control_rate)}%</td>
-                <td class="${d.lift_pp >= 0 ? "pos" : "neg"}">${d.lift_pp >= 0 ? "+" : ""}${d.lift_pp} pp</td></tr>`).join("");
-
-            const caseRows = cases.map(c => `
-                <tr><td><a class="case-link" href="/audit/${esc(c.case_id)}" target="_blank">${esc(c.case_id)}</a></td>
-                <td>${esc(c.failure_class.replace(/_/g, " "))}</td>
-                <td>${fmtRupees(c.amount_paise)}</td>
-                <td><span class="pill ${esc(c.status)}">${esc(c.status.replace(/_/g, " "))}</span>${c.written_off_reason ? ` <span style="color:#94a3b8;font-size:11px">— ${esc(c.written_off_reason.replace(/_/g, " "))}</span>` : ""}</td>
-                <td>${c.recovered_amount_paise ? fmtRupees(c.recovered_amount_paise) : "—"}</td></tr>`).join("");
-
-            const naiveRate = (hd.naive_recovery_rate != null) ? hd.naive_recovery_rate : null;
-
-            document.getElementById("content").innerHTML = `
-                <div class="hero">
-                    <div class="hero-left">
-                        <div class="hero-label">Incremental recovery vs control</div>
-                        <div class="hero-amount">${fmtRupees(hd.incremental_money_paise)}</div>
-                        <div class="hero-sub">+${(hd.incremental_recovery_pp || 0).toFixed(1)} percentage points lift</div>
-                        <div class="hero-ci">95% CI [+${ci[0]}, +${ci[1]}] · 2,000 bootstrap resamples</div>
+                <div>
+                    <div className="bar-g">
+                        <div className="bar-l"><span>Treatment (agent)</span><span>{pct(hd.recovery_rate_treatment)}%</span></div>
+                        <div className="bar"><div className="bf t" style={{width:pct(hd.recovery_rate_treatment)+"%"}}></div></div>
                     </div>
-                    <div class="hero-right">
-                        <div class="hero-bar-group">
-                            <div class="hero-bar-label"><span>Treatment (agent)</span><span>${pct(hd.recovery_rate_treatment)}%</span></div>
-                            <div class="hero-bar"><div class="hero-bar-fill treatment" style="width:${pct(hd.recovery_rate_treatment)}%"></div></div>
-                        </div>
-                        <div class="hero-bar-group">
-                            <div class="hero-bar-label"><span>Control (no agent)</span><span>${pct(hd.recovery_rate_control)}%</span></div>
-                            <div class="hero-bar"><div class="hero-bar-fill control" style="width:${pct(hd.recovery_rate_control)}%"></div></div>
-                        </div>
-                        ${naiveRate != null ? `<div class="hero-bar-group">
-                            <div class="hero-bar-label"><span>Naive retry baseline</span><span>${pct(naiveRate)}%</span></div>
-                            <div class="hero-bar"><div class="hero-bar-fill baseline" style="width:${pct(naiveRate)}%"></div></div>
-                        </div>` : ""}
-                        <div class="hero-delta">
-                            <div class="delta-value">+${fmtRupees(hd.incremental_money_paise)}</div>
-                            <div class="delta-label">money recovered that wouldn't have been</div>
-                        </div>
+                    <div className="bar-g">
+                        <div className="bar-l"><span>Control (no agent)</span><span>{pct(hd.recovery_rate_control)}%</span></div>
+                        <div className="bar"><div className="bf c" style={{width:pct(hd.recovery_rate_control)+"%"}}></div></div>
+                    </div>
+                    {naiveRate != null && <div className="bar-g">
+                        <div className="bar-l"><span>Naive retry baseline</span><span>{pct(naiveRate)}%</span></div>
+                        <div className="bar"><div className="bf n" style={{width:pct(naiveRate)+"%"}}></div></div>
+                    </div>}
+                    <div className="h-delta">
+                        <div className="h-dv">+{fmt(hd.incremental_money_paise)}</div>
+                        <div className="h-dl">money recovered that wouldn't have been</div>
                     </div>
                 </div>
+            </div>
+        );
+    }
 
-                <div class="grid metrics-grid">
-                    <div class="metric-card"><div class="metric-label">Recovery rate (treatment)</div>
-                        <div class="metric-value">${pct(hd.recovery_rate_treatment)}%</div>
-                        <div class="metric-sub muted">control ${pct(hd.recovery_rate_control)}%</div></div>
-                    <div class="metric-card"><div class="metric-label">Incremental lift</div>
-                        <div class="metric-value" style="color:#4ade80">+${(hd.incremental_recovery_pp || 0).toFixed(1)} pp</div>
-                        <div class="metric-sub">95% CI [+${ci[0]}, +${ci[1]}]</div></div>
-                    <div class="metric-card"><div class="metric-label">Incremental money recovered</div>
-                        <div class="metric-value">${fmtRupees(hd.incremental_money_paise)}</div>
-                        <div class="metric-sub muted">vs randomized control</div></div>
-                    <div class="metric-card"><div class="metric-label">Amount at risk</div>
-                        <div class="metric-value">${fmtRupees(batch.amount_at_risk_paise)}</div>
-                        <div class="metric-sub muted">across ${batch.cases || 0} cases</div></div>
-                </div>
+    function MetricCard({label, value, sub, color, delay}) {
+        return (
+            <div className={`card a-fu d${delay}`}>
+                <div className="ml">{label}</div>
+                <div className="mv" style={color?{color}:{}}>{value}</div>
+                <div className={`ms${sub?.muted?" m":""}`}>{sub?.text||sub||""}</div>
+            </div>
+        );
+    }
 
-                <div class="grid compliance-grid">
-                    <div class="compliance-card honesty"><div class="label">Redundant-contact share</div>
-                        <div class="value">${pct(cost.redundant_contact_share, 0)}%</div>
-                        <div class="note">would have paid anyway — reported, not hidden</div></div>
-                    <div class="compliance-card"><div class="label">Opt-outs caused</div>
-                        <div class="value">${cost.opt_outs || 0}</div>
-                        <div class="note">every one honored globally</div></div>
-                    <div class="compliance-card"><div class="label">Promises-to-pay</div>
-                        <div class="value">${promises.received || 0}</div>
-                        <div class="note">${promises.keep_rate != null ? pct(promises.keep_rate, 0) + "% keep rate · " : ""}${fmtRupees(promises.money_via_promises_paise)} recovered</div></div>
-                    <div class="compliance-card"><div class="label">Contacts / spend</div>
-                        <div class="value">${cost.contacts_executed || 0}</div>
-                        <div class="note">${fmtRupees(cost.spend_paise)} total · ${cpir != null ? fmtRupees(cpir) : "—"} per incremental recovery</div></div>
-                </div>
+    function ComplianceCard({label, value, note, honest, delay}) {
+        return (
+            <div className={`card cc${honest?" hon":""} a-fu d${delay}`}>
+                <div className="lb">{label}</div>
+                <div className="vl">{value}</div>
+                <div className="nt">{note}</div>
+            </div>
+        );
+    }
 
-                <div class="grid charts-grid">
-                    <div class="chart-card"><h3>Recovery by failure class</h3>
-                        <canvas id="classChart" height="230"></canvas></div>
-                    <div class="chart-card"><h3>Where the spend went</h3>
-                        <canvas id="spendChart" height="230"></canvas></div>
-                </div>
-
-                <div class="chart-card" style="margin-bottom:24px"><h3>Policy gates that blocked actions</h3>
-                    <div class="blocks">${blockChips}<span class="caption">every block is audit-logged with its reason</span></div></div>
-
-                <div class="cases-card" style="margin-bottom:24px"><h3>Recent cases <span style="color:#94a3b8;font-size:12px;font-weight:400">(click a case for its full audit trail)</span></h3>
-                    <table><thead><tr><th>Case</th><th>Class</th><th>Amount</th><th>Status</th><th>Recovered</th></tr></thead>
-                    <tbody>${caseRows || '<tr><td colspan="5" style="color:#94a3b8">no cases yet</td></tr>'}</tbody></table></div>
-
-                <div class="buttons">
-                    <button class="btn-primary" onclick="openModal('calculatorModal')">ROI Calculator</button>
-                    <button class="btn-secondary" onclick="window.open('/docs', '_blank')">API Documentation</button>
-                </div>
-
-                <div class="footer">
-                    <p>Razorpay Revenue Recovery Agent v0.2.0 — every number on this page is computed from the append-only audit trail.</p>
-                    <p style="margin-top:8px;color:#60a5fa">Treatment/control split is stratified by failure class at ingest. Every decision is audited; every metric is honest.</p>
-                </div>`;
-
-            renderClassChart(perClass);
-            renderSpendChart(cost.cost_by_channel_paise || {});
-        }
-
-        const _charts = {};
-        function renderClassChart(perClass) {
-            if (_charts.class) _charts.class.destroy();
-            const entries = Object.entries(perClass).sort((a, b) => b[1].lift_pp - a[1].lift_pp);
-            _charts.class = new Chart(document.getElementById("classChart"), {
-                type: "bar",
-                data: {
-                    labels: entries.map(([c]) => c.replace(/_/g, " ").toLowerCase()),
-                    datasets: [
-                        { label: "Treatment %", data: entries.map(([, d]) => pct(d.treatment_rate, 1)),
-                          backgroundColor: "#3b82f6", borderRadius: 6 },
-                        { label: "Control %", data: entries.map(([, d]) => pct(d.control_rate, 1)),
-                          backgroundColor: "#64748b", borderRadius: 6 }],
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { color: "#93c5fd" } } },
-                    scales: {
-                        x: { ticks: { color: "#93c5fd", font: { size: 10 } }, grid: { color: "rgba(147,197,253,.08)" } },
-                        y: { beginAtZero: true, max: 100, ticks: { color: "#93c5fd", callback: v => v + "%" },
-                             grid: { color: "rgba(147,197,253,.08)" } },
-                    },
-                },
+    function Charts({perClass, spendByChannel}) {
+        const classRef = useRef(null);
+        const spendRef = useRef(null);
+        const charts = useRef({});
+        useEffect(() => {
+            if(charts.current.cls) charts.current.cls.destroy();
+            const entries = Object.entries(perClass).sort((a,b)=>b[1].lift_pp-a[1].lift_pp);
+            charts.current.cls = new Chart(classRef.current, {
+                type:"bar",
+                data:{labels:entries.map(([c])=>c.replace(/_/g," ").toLowerCase()),datasets:[
+                    {label:"Treatment %",data:entries.map(([,d])=>pct(d.treatment_rate,1)),backgroundColor:"#3b82f6",borderRadius:4},
+                    {label:"Control %",data:entries.map(([,d])=>pct(d.control_rate,1)),backgroundColor:"#64748b",borderRadius:4}
+                ]},
+                options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:11}}}},scales:{
+                    x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}},
+                    y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,.04)"}}
+                }}
             });
-        }
-
-        function renderSpendChart(byChannel) {
-            if (_charts.spend) _charts.spend.destroy();
-            const channels = Object.entries(byChannel).filter(([, v]) => v > 0)
-                .map(([k, v]) => ({ name: k[0].toUpperCase() + k.slice(1), value: v }));
-            if (!channels.length) {
-                document.getElementById("spendChart").outerHTML =
-                    '<p style="color:#94a3b8;text-align:center;padding:80px 0">No spend recorded yet</p>';
-                return;
+            if(charts.current.spend) charts.current.spend.destroy();
+            const chs = Object.entries(spendByChannel).filter(([,v])=>v>0).map(([k,v])=>({n:k[0].toUpperCase()+k.slice(1),v}));
+            if(chs.length && spendRef.current) {
+                charts.current.spend = new Chart(spendRef.current, {
+                    type:"doughnut",
+                    data:{labels:chs.map(c=>`${c.n} · ${fmt(c.v)}`),datasets:[{data:chs.map(c=>c.v),backgroundColor:["#38bdf8","#4ade80","#fbbf24","#f87171","#a78bfa"]}]},
+                    options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",padding:12,font:{size:11}}}}}
+                });
             }
-            _charts.spend = new Chart(document.getElementById("spendChart"), {
-                type: "doughnut",
-                data: {
-                    labels: channels.map(c => `${c.name} · ${fmtRupees(c.value)}`),
-                    datasets: [{ data: channels.map(c => c.value),
-                                 backgroundColor: ["#38bdf8", "#4ade80", "#fbbf24", "#f87171", "#a78bfa"] }],
-                },
-                options: {
-                    responsive: true, cutout: "55%",
-                    plugins: { legend: { position: "bottom", labels: { color: "#93c5fd", padding: 14 } } },
-                },
-            });
-        }
+        }, [perClass, spendByChannel]);
+        return (
+            <div className="grid m2">
+                <div className="card a-fu d5"><div className="card-h"><span className="card-t">Recovery by failure class</span></div><canvas ref={classRef} height="220"></canvas></div>
+                <div className="card a-fu d6"><div className="card-h"><span className="card-t">Spend by channel</span></div>{Object.keys(spendByChannel).length?<canvas ref={spendRef} height="220"></canvas>:<p style={{color:"var(--dim)",textAlign:"center",padding:"60px 0"}}>No spend recorded</p>}</div>
+            </div>
+        );
+    }
 
-        async function calculateROI() {
-            const q = new URLSearchParams({
-                amount_at_risk_cr: document.getElementById("amountAtRisk").value,
-                baseline_recovery_pct: document.getElementById("baselineRecovery").value,
-                estimated_lift_pp: document.getElementById("estimatedLift").value,
-            });
+    function CasesTable({cases}) {
+        return (
+            <div className="card a-fu" style={{marginBottom:20}}>
+                <div className="card-h"><span className="card-t">Recent cases</span><span className="card-b">click for audit trail</span></div>
+                <table><thead><tr><th>Case</th><th>Class</th><th>Amount</th><th>Status</th><th>Recovered</th></tr></thead>
+                <tbody>{cases.length?cases.map(c=><tr key={c.case_id}>
+                    <td><a className="cl" href={`/audit/${c.case_id}`} target="_blank">{c.case_id}</a></td>
+                    <td>{esc(c.failure_class.replace(/_/g," "))}</td><td>{fmt(c.amount_paise)}</td>
+                    <td><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span>{c.written_off_reason?` — ${c.written_off_reason.replace(/_/g," ")}`:""}</td>
+                    <td>{c.recovered_amount_paise?fmt(c.recovered_amount_paise):"—"}</td>
+                </tr>):<tr><td colSpan="5" style={{color:"var(--dim)"}}>no cases yet</td></tr>}</tbody></table>
+            </div>
+        );
+    }
+
+    function ROIModal({open, onClose}) {
+        const [phase, setPhase] = useState("form");
+        const [result, setResult] = useState(null);
+        const [amt, setAmt] = useState(10);
+        const [base, setBase] = useState(20);
+        const [lift, setLift] = useState(50);
+        const calc = async () => {
             try {
+                const q = new URLSearchParams({amount_at_risk_cr:amt,baseline_recovery_pct:base,estimated_lift_pp:lift});
                 const r = await fetch(`${API}/calculator?${q}`);
-                if (!r.ok) throw new Error();
-                const out = await r.json();
-                document.getElementById("roiForm").style.display = "none";
-                const res = document.getElementById("roiResult");
-                res.style.display = "block";
-                res.innerHTML = `
-                    <div style="text-align:center;padding:20px 0">
-                        <div style="color:#93c5fd;font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Incremental Recovery</div>
-                        <div style="font-size:40px;font-weight:800;color:#4ade80;margin-bottom:4px">${out.incremental_recovery_display}</div>
-                        <div style="color:#94a3b8;font-size:13px;margin-bottom:24px">money recovered that wouldn't have been</div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
-                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">PROJECTED CONTACTS</div>
-                            <div style="color:#fff;font-size:20px;font-weight:700">${out.projected_contacts.toLocaleString("en-IN")}</div>
+                if(!r.ok) throw 0;
+                setResult(await r.json());
+                setPhase("result");
+            } catch(e) { alert("Calculation failed"); }
+        };
+        if(!open) return null;
+        return (
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+                <div className="modal-c">
+                    <h2>ROI Calculator</h2>
+                    {phase==="form"?<>
+                        <div className="fg"><label>Amount at risk (₹ Cr)</label><input type="number" value={amt} onChange={e=>setAmt(e.target.value)} step="0.1" min="0.1"/></div>
+                        <div className="fg"><label>Baseline recovery %</label><input type="number" value={base} onChange={e=>setBase(e.target.value)} min="0" max="100"/></div>
+                        <div className="fg"><label>Estimated lift (pp)</label><input type="number" value={lift} onChange={e=>setLift(e.target.value)} min="0" max="100"/></div>
+                        <div className="mb"><button className="bp" onClick={calc}>Calculate</button><button className="bs" onClick={onClose}>Close</button></div>
+                    </>:<>
+                        <div style={{textAlign:"center",padding:"12px 0"}}>
+                            <div style={{color:"var(--sec)",fontSize:11,textTransform:"uppercase",letterSpacing:".05em",marginBottom:6}}>Incremental Recovery</div>
+                            <div style={{fontSize:34,fontWeight:800,color:"var(--grn)",marginBottom:4}}>{result.incremental_recovery_display}</div>
+                            <div style={{color:"var(--dim)",fontSize:12,marginBottom:16}}>money recovered that wouldn't have been</div>
                         </div>
-                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
-                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">CONTACT SPEND</div>
-                            <div style="color:#fff;font-size:20px;font-weight:700">${fmtRupees(out.projected_contact_spend_paise)}</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                            {[["PROJECTED CONTACTS",result.projected_contacts.toLocaleString("en-IN")],["CONTACT SPEND",fmt(result.projected_contact_spend_paise)],["COST / RECOVERY",fmt(result.cost_per_incremental_recovery_paise)],["ROI MULTIPLE",result.projected_contact_spend_paise>0?(result.incremental_recovery_paise/result.projected_contact_spend_paise).toFixed(0)+"x":"—"]].map(([l,v],i)=><div key={i} style={{background:"rgba(255,255,255,.04)",padding:12,borderRadius:8,textAlign:"center"}}><div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:17,fontWeight:700}}>{v}</div></div>)}
                         </div>
-                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
-                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">COST / INCR. RECOVERY</div>
-                            <div style="color:#fff;font-size:20px;font-weight:700">${fmtRupees(out.cost_per_incremental_recovery_paise)}</div>
-                        </div>
-                        <div style="background:rgba(255,255,255,.05);padding:16px;border-radius:8px;text-align:center">
-                            <div style="color:#93c5fd;font-size:11px;margin-bottom:4px">ROI MULTIPLE</div>
-                            <div style="color:#4ade80;font-size:20px;font-weight:700">${out.projected_contact_spend_paise > 0 ? (out.incremental_recovery_paise / out.projected_contact_spend_paise).toFixed(0) + "x" : "—"}</div>
-                        </div>
-                    </div>
-                    <div style="color:#94a3b8;font-size:11px;border-top:1px solid rgba(147,197,253,.15);padding-top:12px">
-                        assumptions: median case ${out.assumptions.median_case_amount} · ${out.assumptions.cost_per_touch_source}
-                    </div>
-                    <div class="modal-buttons" style="margin-top:16px">
-                        <button class="btn-secondary" onclick="resetROI()">Recalculate</button>
-                        <button class="btn-secondary" onclick="closeModal('calculatorModal')">Close</button>
-                    </div>`;
-            } catch (e) { alert("ROI calculation failed — check the inputs."); }
-        }
+                        <div style={{color:"var(--dim)",fontSize:11,borderTop:"1px solid var(--bdr)",paddingTop:10}}>assumptions: median case {result.assumptions.median_case_amount} · {result.assumptions.cost_per_touch_source}</div>
+                        <div className="mb" style={{marginTop:12}}><button className="bs" onClick={()=>setPhase("form")}>Recalculate</button><button className="bs" onClick={onClose}>Close</button></div>
+                    </>}
+                </div>
+            </div>
+        );
+    }
 
-        function resetROI() {
-            document.getElementById("roiForm").style.display = "block";
-            document.getElementById("roiResult").style.display = "none";
-        }
+    function App() {
+        const [rep, setRep] = useState(null);
+        const [cases, setCases] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(false);
+        const [roiOpen, setRoiOpen] = useState(false);
 
-        function openModal(id) { document.getElementById(id).classList.add("active"); }
-        function closeModal(id) { document.getElementById(id).classList.remove("active"); }
-        document.addEventListener("keydown", e => {
-            if (e.key === "Escape") document.querySelectorAll(".modal.active").forEach(m => m.classList.remove("active"));
-        });
-        document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("active"); }));
+        useEffect(() => {
+            Promise.all([fetch(`${API}/report`), fetch(`${API}/cases/recent?limit=15`)])
+                .then(async ([r1,r2]) => {
+                    if(!r1.ok) throw 0;
+                    setRep(await r1.json());
+                    setCases(r2.ok?(await r2.json()).cases:[]);
+                    setLoading(false);
+                })
+                .catch(() => { setError(true); setLoading(false); });
+        }, []);
 
-        window.addEventListener("load", loadDashboard);
+        if(loading) return <div className="ld"><div style={{textAlign:"center"}}><div className="spinner"></div><p style={{color:"var(--dim)"}}>Loading recovery metrics…</p></div></div>;
+        if(error) return <div className="err"><div style={{textAlign:"center"}}><p style={{fontSize:18,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)"}}>Is the API running at {esc(API)}?</p></div></div>;
+
+        const hd=rep.headline||{},batch=rep.batch||{},cost=rep.cost||{},perClass=rep.per_class||{},promises=rep.promises||{};
+        const naiveRate=hd.naive_recovery_rate!=null?hd.naive_recovery_rate:null;
+        const blocks=rep.policy_transparency?.blocked_actions||{};
+        const cpir=cost.cost_per_incremental_recovery_paise;
+
+        return (<>
+            <TopBar cases={batch.cases} treatment={batch.treatment_n} control={batch.control_n}/>
+            <div className="ctr">
+                <Hero hd={hd} naiveRate={naiveRate}/>
+                <div className="grid m4">
+                    <MetricCard label="Recovery rate" value={pct(hd.recovery_rate_treatment)+"%"} sub={{text:`control ${pct(hd.recovery_rate_control)}%`,muted:true}} delay={1}/>
+                    <MetricCard label="Incremental lift" value={`+${(hd.incremental_recovery_pp||0).toFixed(1)} pp`} sub={`95% CI [+${hd.incremental_recovery_ci95_pp?.[0]}, +${hd.incremental_recovery_ci95_pp?.[1]}]`} color="var(--grn)" delay={2}/>
+                    <MetricCard label="Money recovered" value={fmt(hd.incremental_money_paise)} sub={{text:"incremental vs control",muted:true}} delay={3}/>
+                    <MetricCard label="Amount at risk" value={fmt(batch.amount_at_risk_paise)} sub={{text:`across ${batch.cases} cases`,muted:true}} delay={4}/>
+                </div>
+                <div className="grid cg">
+                    <ComplianceCard label="Redundant contacts" value={pct(cost.redundant_contact_share,0)+"%"} note="would have paid anyway — reported, not hidden" honest delay={1}/>
+                    <ComplianceCard label="Opt-outs honored" value={cost.opt_outs||0} note="every one respected globally" delay={2}/>
+                    <ComplianceCard label="Promises-to-pay" value={promises.received||0} note={`${promises.keep_rate!=null?pct(promises.keep_rate,0)+"% keep rate":"none yet"}${promises.money_via_promises_paise?" · "+fmt(promises.money_via_promises_paise):""}`} delay={3}/>
+                    <ComplianceCard label="Cost per recovery" value={cpir!=null?fmt(cpir):"—"} note={`${cost.contacts_executed||0} contacts · ${fmt(cost.spend_paise)} spend`} delay={4}/>
+                </div>
+                <Charts perClass={perClass} spendByChannel={cost.cost_by_channel_paise||{}}/>
+                <div className="card" style={{marginBottom:20}}>
+                    <div className="card-h"><span className="card-t">Policy gates that blocked actions</span></div>
+                    <div className="chips">
+                        {Object.entries(blocks).length?Object.entries(blocks).map(([k,v])=><span className="chip" key={k}>{esc(k||"unknown")} · {v}</span>):<span className="chip ok">no blocked actions</span>}
+                        <span className="cap">every block is audit-logged</span>
+                    </div>
+                </div>
+                <CasesTable cases={cases}/>
+                <div className="btns" style={{marginBottom:20}}>
+                    <button className="bp" onClick={()=>setRoiOpen(true)}>ROI Calculator</button>
+                    <button className="bs" onClick={()=>window.open("/docs","_blank")}>API Documentation</button>
+                </div>
+                <div className="ftr">
+                    <p>Razorpay Revenue Recovery Agent v0.3.0 — every number is computed from the append-only audit trail</p>
+                    <p style={{marginTop:6}}>Treatment/control stratified by failure class at ingest · 5-seed evaluation · Bootstrap 95% CI · <a href="/docs">API docs</a></p>
+                </div>
+            </div>
+            <ROIModal open={roiOpen} onClose={()=>setRoiOpen(false)}/>
+        </>);
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
     </script>
 </body>
 </html>

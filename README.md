@@ -64,9 +64,11 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
    organic recoveries ("would have paid anyway"). The report's headline is lift,
    not total recovered. A naive retry baseline shows what a dumb single-retry
    strategy achieves — the agent's smart multi-contact ladder does 1.8x better.
-2. **The dashboard tells the story in 3 seconds.** A hero section shows the
-   incremental recovery number big, with side-by-side treatment vs control vs
-   naive baseline bars. No digging through tables required.
+2. **The dashboard tells the story in 3 seconds.** A React-powered hero
+   section with staggered fade-in animations shows the incremental recovery
+   number big, with side-by-side treatment vs control vs naive baseline bars.
+   Animated counter numbers, Chart.js charts, and a spend doughnut — no
+   digging through tables required.
 2. **Compliance is a first-class gate.** Every action passes one pure-function
    policy engine: quiet hours (IST), rolling attempt caps, cooldowns, opt-out
    registry, human approval above ₹25k, case expiry. Blocks are audit-logged
@@ -262,6 +264,18 @@ Then wire the traffic:
 Without keys everything runs in simulation mode — identical code paths except
 the delivery sink and payment-link creation, which are stubs.
 
+## React Dashboard + 404 Page
+
+The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, no node_modules):
+
+- **Staggered fade-in animations** on hero, metrics, charts, compliance cards, and tables
+- **Animated counter numbers** that count up on load
+- **Chart.js integration** with memory-leak-safe destroy/recreate pattern
+- **Spend-by-channel doughnut** and per-class recovery bar chart
+- **Interactive cases table** with clickable audit links
+- **ROI calculator modal** with live calculation against `/calculator`
+- **Custom 404 page** (`/static/404.html`) with glitch-style "404", scanline animation, floating particles, terminal-style error output, and quick links back to dashboard/docs/report
+
 ## Repo map
 
 | Path | Purpose |
@@ -287,7 +301,7 @@ the delivery sink and payment-link creation, which are stubs.
 | `app/main.py` | FastAPI: webhooks, inbound replies, approvals, tick, audit, report |
 | `app/razorpay_client.py` | Razorpay test-mode HTTP client / recording stub |
 | `app/notifier.py` | Slack ops alerts (escalations, opt-outs) — best-effort |
-| `app/static/dashboard.html` | Dashboard (vendored Chart.js — no CDN, works offline) |
+| `app/static/dashboard.html` | **React dashboard** (CDN-loaded, no build step) — animated hero, counter numbers, Chart.js charts, spend doughnut, cases table, ROI modal, custom 404 page — works offline |
 | `app/report_html.py` | Dependency-free fallback dashboard if the static bundle is missing |
 | `integrations/` | Mock voice BSP for live demos (no credentials needed) |
 | **Deployment** | |

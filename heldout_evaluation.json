@@ -1,0 +1,91 @@
+{
+  "description": "Held-out evaluation set (seed 999, separate from training seed 42)",
+  "seed": 999,
+  "n": 500,
+  "classification_accuracy": 1.0,
+  "classification_confusions": {},
+  "headline": {
+    "recovered_treatment_paise": 245932003,
+    "recovered_control_paise": 15295005,
+    "recovery_rate_treatment": 0.7022,
+    "recovery_rate_control": 0.2292,
+    "incremental_recovery_pp": 47.31,
+    "incremental_recovery_ci95_pp": [
+      39.06,
+      55.16
+    ],
+    "incremental_money_paise": 143688459,
+    "incremental_recoveries_est": 168,
+    "naive_recovery_rate": 0.5003
+  },
+  "cost": {
+    "spend_paise": 19249,
+    "contacts_executed": 1187,
+    "cost_by_channel_paise": {
+      "whatsapp": 10290,
+      "sms": 3165,
+      "email": 694,
+      "voice": 5100
+    },
+    "cost_per_incremental_recovery_paise": 114,
+    "redundant_contact_share": 0.326,
+    "opt_outs": 4
+  },
+  "per_class": {
+    "CUSTOMER_ABANDONMENT": {
+      "n": 50,
+      "treatment_rate": 0.429,
+      "control_rate": 0.067,
+      "lift_pp": 36.2
+    },
+    "HARD_DECLINE": {
+      "n": 35,
+      "treatment_rate": 0.154,
+      "control_rate": 0.111,
+      "lift_pp": 4.3
+    },
+    "INSUFFICIENT_FUNDS": {
+      "n": 130,
+      "treatment_rate": 0.835,
+      "control_rate": 0.256,
+      "lift_pp": 57.9
+    },
+    "INVOICE_OVERDUE": {
+      "n": 40,
+      "treatment_rate": 0.786,
+      "control_rate": 0.083,
+      "lift_pp": 70.2
+    },
+    "ISSUER_UNAVAILABLE": {
+      "n": 45,
+      "treatment_rate": 0.758,
+      "control_rate": 0.333,
+      "lift_pp": 42.4
+    },
+    "MANDATE_ISSUE": {
+      "n": 65,
+      "treatment_rate": 0.723,
+      "control_rate": 0.167,
+      "lift_pp": 55.7
+    },
+    "NETWORK_TIMEOUT": {
+      "n": 55,
+      "treatment_rate": 0.825,
+      "control_rate": 0.4,
+      "lift_pp": 42.5
+    },
+    "SOFT_DECLINE_OTHER": {
+      "n": 50,
+      "treatment_rate": 0.714,
+      "control_rate": 0.267,
+      "lift_pp": 44.8
+    },
+    "SUBSCRIPTION_FAILED": {
+      "n": 30,
+      "treatment_rate": 0.762,
+      "control_rate": 0.333,
+      "lift_pp": 42.9
+    }
+  },
+  "note": "This set was never used during model training or parameter tuning. The recovery model trains on batch outcomes (seed 42); this held-out set uses a completely different random draw (seed 999) to prevent data leakage."
+}

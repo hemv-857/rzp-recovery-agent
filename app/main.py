@@ -30,7 +30,7 @@ from .razorpay_client import client
 
 app = FastAPI(
     title="Razorpay Revenue Recovery Agent",
-    version="0.2.0",
+    version="0.3.0",
     description=(
         "Closes the loop from revenue at risk to *measured* money recovered: "
         "failure-aware strategy selection, a pure-function compliance gate in front "
@@ -52,6 +52,12 @@ app = FastAPI(
 _STATIC = Path(__file__).parent / "static"
 if _STATIC.is_dir():
     app.mount("/static", StaticFiles(directory=_STATIC), name="static")
+
+
+@app.exception_handler(404)
+async def _custom_404(request: Request, exc):
+    html = (_STATIC / "404.html").read_text()
+    return HTMLResponse(html, status_code=404)
 
 _DASHBOARD_HTML: str | None = None
 
@@ -132,8 +138,17 @@ async def razorpay_webhook(
 
     event = await request.json()
     etype: str = event.get("event", "")
+    event_id: str = event.get("event_id", f"evt_{hash(body)}")
     store = _store()
     cfg = _cfg()
+
+    # event-level idempotency: Razorpay may redeliver the same webhook
+    if store.is_event_processed(event_id):
+        # find existing case by payment_id from the event payload
+        p = event.get("payload", {}).get("payment", {}).get("entity", {})
+        payment_id = p.get("id", "")
+        case = store.get_case_by_payment(payment_id) if payment_id else None
+        return {"status": "already_processed", "event_id": event_id, "case_id": case.case_id if case else None}
 
     if etype == "payment.failed":
         p = event["payload"]["payment"]["entity"]
@@ -161,6 +176,7 @@ async def razorpay_webhook(
                 notify(f":rocket: recovery-agent — high-value case awaiting "
                        f"human approval: {case_line(case)}")
         plan_and_schedule(case, cfg, datetime.now(timezone.utc), store)
+        store.mark_event_processed(event_id, etype)
         return {"status": "ingested", "case_id": case.case_id}
 
     if etype == "payment_link.paid":
@@ -188,10 +204,12 @@ async def razorpay_webhook(
             if paid_at else datetime.now(timezone.utc).isoformat(),
             store, via="webhook",
         )
+        store.mark_event_processed(event_id, etype)
         return {"status": "recovered", "case_id": case.case_id}
 
     store.append_audit(AuditEvent(actor="webhook", event_type=f"ignored.{etype}",
                                   payload={"event": etype}))
+    store.mark_event_processed(event_id, etype)
     return {"status": f"ignored:{etype}"}
 
 

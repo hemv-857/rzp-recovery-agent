@@ -43,6 +43,11 @@ CREATE TABLE IF NOT EXISTS audit (
   case_id TEXT,
   payload TEXT
 );
+CREATE TABLE IF NOT EXISTS webhook_events (
+  event_id TEXT PRIMARY KEY,
+  processed_at TEXT NOT NULL,
+  event_type TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_audit_case ON audit(case_id);
 CREATE INDEX IF NOT EXISTS idx_actions_case ON actions(case_id);
 """
@@ -200,3 +205,19 @@ class Store:
 
     def close(self) -> None:
         self.conn.close()
+
+    # ---- webhook idempotency -------------------------------------------
+    def is_event_processed(self, event_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT 1 FROM webhook_events WHERE event_id=?", (event_id,)
+        ).fetchone()
+        return row is not None
+
+    def mark_event_processed(self, event_id: str, event_type: str = "") -> None:
+        from datetime import datetime, timezone
+        self.conn.execute(
+            "INSERT OR IGNORE INTO webhook_events (event_id, processed_at, event_type) "
+            "VALUES (?,?,?)",
+            (event_id, datetime.now(timezone.utc).isoformat(), event_type),
+        )
+        self.conn.commit()
