@@ -31,6 +31,11 @@ Every public claim backed to a file, test, or run command.
 | **SHAP per-case explainability** | `app/recovery_model.py:RecoveryModel._explain()` — TreeExplainer for per-case signed SHAP values. Falls back to feature_importances_. |
 | **India-specific compliance** | `app/policy.py:evaluate()` — RBI e-mandate pre-debit notice (≥₹5000 first attempt), TRAI quiet hours (21:00–09:00 IST). |
 | **Promise-to-pay EV feedback** | `app/promisetopay.py:PromiseTracker.adjust_ev()` — adjusts EV by customer promise reliability. Used in `app/selector.py`. |
+| **Provider switching (Mock/Ollama/Claude)** | `app/main.py:/provider` endpoints — live toggle with source tags on each transaction. Mirrors Manojkumar1710. |
+| **SSE batch progress** | `app/main.py:/batch/run/stream` — Server-Sent Events stream for live batch run progress. Mirrors Swarajkarle. |
+| **14 failure categories** | `app/models.py:FailureClass` + `app/classifier.py:_RULES` — CARD_EXPIRED, GATEWAY_TIMEOUT, PRICE_SHOCK, OVERDUE_GENUINE added. |
+| **Case detail timeline with Hinglish scripts** | `app/main.py:/cases/{case_id}/detail` — full timeline: detection → diagnosis → intervention → outcome. |
+| **Editable compliance settings** | `app/main.py:/settings` — max_attempts, quiet_hours, DND list, discount_pct, escalation_threshold. Mirrors Swarajkarle. |
 
 ## How to reproduce
 

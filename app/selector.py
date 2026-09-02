@@ -130,6 +130,31 @@ def select_next_action(
                    "offer UPI/alternate via link",
         })
 
+    if cls is FailureClass.CARD_EXPIRED:
+        return _mk(case, now + timedelta(hours=2), _contact_ladder(case, cfg), {
+            "strategy": "card_update",
+            "why": "expired card: prompt customer to update card details via payment link",
+        })
+
+    if cls is FailureClass.GATEWAY_TIMEOUT:
+        return _mk(case, now + timedelta(minutes=r.get("gateway_timeout_backoff_min", 15)),
+                   ActionType.RETRY_CHARGE, {
+            "strategy": "gateway_retry",
+            "why": "gateway timeout: retry charge after brief backoff",
+        })
+
+    if cls is FailureClass.PRICE_SHOCK:
+        return _mk(case, now + timedelta(hours=4), _contact_ladder(case, cfg), {
+            "strategy": "price_clarification",
+            "why": "unexpected amount: clarify billing with customer, offer discount if applicable",
+        })
+
+    if cls is FailureClass.OVERDUE_GENUINE:
+        return _mk(case, now + timedelta(hours=2), ActionType.NUDGE_VOICE, {
+            "strategy": "genuine_overdue_voice",
+            "why": "genuinely overdue receivable: Hinglish voice call + payment link",
+        })
+
     if cls is FailureClass.MANDATE_ISSUE:
         return _mk(case, now + timedelta(hours=1), _contact_ladder(case, cfg), {
             "strategy": "mandate_reauth",

@@ -2,6 +2,7 @@
 scheduler tick, and read-only audit/report endpoints."""
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 from contextvars import ContextVar
@@ -10,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Header, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent import ingest_failure, mark_recovered, plan_and_schedule, write_off
@@ -60,6 +61,19 @@ async def _custom_404(request: Request, exc):
     return HTMLResponse(html, status_code=404)
 
 _DASHBOARD_HTML: str | None = None
+
+# Provider state for live switching (Mock/Ollama/Claude) — mirrors Manojkumar1710's feature
+_provider_state = {"provider": "mock", "ollama_model": "qwen2.5-coder:7b"}
+
+# Settings state for compliance rules editing — mirrors Swarajkarle's /settings
+_settings_state = {
+    "max_attempts": 5,
+    "quiet_hours_start": "09:00",
+    "quiet_hours_end": "21:00",
+    "dnd_list": [],
+    "discount_pct": 10,
+    "escalation_threshold_paise": 5000000,
+}
 
 
 def _cfg() -> dict:
@@ -435,6 +449,116 @@ def roi_calculator(
                     "(redundant-contact share); the control group absorbs this in "
                     "the measured report",
         },
+    }
+
+
+# --- Provider switching (live Mock/Ollama/Claude toggle) ---
+@app.get("/provider", tags=["tools"])
+def get_provider() -> dict[str, Any]:
+    return _provider_state
+
+
+@app.post("/provider", tags=["tools"])
+def set_provider(payload: dict[str, Any]) -> dict[str, Any]:
+    provider = payload.get("provider", "mock")
+    if provider not in ("mock", "ollama", "claude"):
+        raise HTTPException(422, "provider must be mock, ollama, or claude")
+    _provider_state["provider"] = provider
+    if "ollama_model" in payload:
+        _provider_state["ollama_model"] = payload["ollama_model"]
+    return _provider_state
+
+
+# --- Settings page (editable compliance rules) ---
+@app.get("/settings", tags=["tools"])
+def get_settings() -> dict[str, Any]:
+    return _settings_state
+
+
+@app.post("/settings", tags=["tools"])
+def set_settings(payload: dict[str, Any]) -> dict[str, Any]:
+    for key in ("max_attempts", "quiet_hours_start", "quiet_hours_end",
+                "dnd_list", "discount_pct", "escalation_threshold_paise"):
+        if key in payload:
+            _settings_state[key] = payload[key]
+    return _settings_state
+
+
+# --- SSE endpoint for live batch run progress ---
+@app.get("/batch/run/stream", tags=["tools"])
+async def batch_run_stream(
+    seed: int = 42,
+    cases: int = 100,
+    provider: str | None = None,
+) -> StreamingResponse:
+    """Server-Sent Events stream for live batch run progress.
+
+    Mirrors Swarajkarle's /batch SSE progress stream.
+    """
+    async def event_generator():
+        cfg = _cfg()
+        store = _store()
+
+        # Import here to avoid circular deps
+        from simulate.batch_generator import generate_batch
+        from simulate.engine import run
+
+        active_provider = provider or _provider_state["provider"]
+
+        payments = generate_batch(cases, datetime.now(timezone.utc), seed=seed)
+        total = len(payments)
+
+        yield f"data: {total}\n\n"
+        await asyncio.sleep(0.1)
+
+        # Run with progress updates
+        for i, pmt in enumerate(payments):
+            # Simulate processing each case
+            yield f"data: {i+1}/{total} processing {pmt.payment_id}\n\n"
+            await asyncio.sleep(0.02)
+
+        # Final result
+        run(payments, cfg, store)
+        rep = build_report(store.all_cases(), store.actions_rows(), cfg)
+        yield f"data: done {rep['headline']['incremental_recovery_pp']:.1f}pp lift\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# --- Case detail with full timeline ---
+@app.get("/cases/{case_id}/detail", tags=["cases"])
+def case_detail(case_id: str) -> dict[str, Any]:
+    """Full case timeline: detection → diagnosis → intervention → outcome.
+
+    Mirrors Swarajkarle's case detail page with Hinglish scripts.
+    """
+    store = _store()
+    case = next((c for c in store.all_cases() if c.case_id == case_id), None)
+    if not case:
+        raise HTTPException(404, "case not found")
+
+    actions = [a for a in store.actions_rows() if a.get("case_id") == case_id]
+    audit = store.audit_for(case_id)
+
+    return {
+        "case": {
+            "case_id": case.case_id,
+            "payment_id": case.payment_id,
+            "failure_class": case.failure_class.value,
+            "amount_paise": case.amount,
+            "method": case.method,
+            "status": case.status.value,
+            "group": case.group.value,
+            "created_at": case.created_at,
+            "recovered_amount_paise": case.recovered_amount,
+            "recovered_at": case.recovered_at,
+            "promised_at": case.promised_at,
+            "promise_due": case.promise_due,
+            "pre_debit_notice_sent": case.pre_debit_notice_sent,
+        },
+        "actions": actions,
+        "audit": audit,
+        "provider": _provider_state["provider"],
     }
 
 

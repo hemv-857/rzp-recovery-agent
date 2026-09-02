@@ -19,28 +19,36 @@ from .models import FailureClass
 _RULES: list[tuple[tuple[str, ...], FailureClass, float]] = [
     (("insufficient_funds", "insufficient funds", "no balance", "low balance"),
      FailureClass.INSUFFICIENT_FUNDS, 0.95),
-    (("mandate_revoked", "mandate paused", "mandate expired", "emandate",
-      "nach", "auto debit disabled", "subscription revoked"),
+    (("card_expired", "expired card", "expiry", "expiration date"),
+     FailureClass.CARD_EXPIRED, 0.95),
+    (("mandate_revoked", "mandate paused", "mandate expired", "mandate_lapsed",
+       "emandate", "nach", "auto debit disabled", "subscription revoked"),
      FailureClass.MANDATE_ISSUE, 0.9),
     (("checkout_abandoned", "drop_off", "dropped off", "abandoned"),
      FailureClass.CUSTOMER_ABANDONMENT, 0.9),
     (("invoice_overdue", "overdue invoice", "receivable", "payment terms"),
      FailureClass.INVOICE_OVERDUE, 0.92),
+    (("overdue_genuine", "overdue_genuine", "genuinely overdue"),
+     FailureClass.OVERDUE_GENUINE, 0.9),
     (("recurring_failed", "subscription_charge_failed", "auto debit failed",
-      "renewal failed"),
+       "renewal failed"),
      FailureClass.SUBSCRIPTION_FAILED, 0.88),
     (("authentication_failed", "authentication unavailable", "3ds", "otp"),
      FailureClass.SOFT_DECLINE_OTHER, 0.75),
     (("stolen_card", "card_stolen", "lost_card", "blocked_card", "card_blocked",
-      "fraud", "do_not_honor", "do not honor", "restricted card"),
+       "fraud", "do_not_honor", "do not honor", "restricted card"),
      FailureClass.HARD_DECLINE, 0.92),
     (("issuer_unavailable", "issuer unavailable", "issuer_timeout"),
      FailureClass.ISSUER_UNAVAILABLE, 0.85),
+    (("gateway_timeout", "gateway error", "gateway_error", "gateway timeout"),
+     FailureClass.GATEWAY_TIMEOUT, 0.85),
     (("timeout", "timed out", "network_error", "network error", "connection"),
      FailureClass.NETWORK_TIMEOUT, 0.8),
+    (("price_shock", "amount changed", "unexpected amount", "billing shock"),
+     FailureClass.PRICE_SHOCK, 0.8),
     (("card_declined", "payment_declined", "declined by bank"),
      FailureClass.SOFT_DECLINE_OTHER, 0.6),
-    (("gateway_error", "gateway_error", "acquirer"),
+    (("gateway_error", "acquirer"),
      FailureClass.ISSUER_UNAVAILABLE, 0.7),
 ]
 
@@ -48,6 +56,7 @@ _SYSTEM = (
     "You classify failed payment reasons for an Indian payments platform. "
     "Reply with JSON: {\"failure_class\": one of INSUFFICIENT_FUNDS, NETWORK_TIMEOUT, "
     "ISSUER_UNAVAILABLE, SOFT_DECLINE_OTHER, HARD_DECLINE, MANDATE_ISSUE, UNKNOWN, "
+    "CARD_EXPIRED, GATEWAY_TIMEOUT, PRICE_SHOCK, OVERDUE_GENUINE, "
     "\"confidence\": 0-1}. HARD_DECLINE means the instrument itself is blocked/fraud-flagged."
 )
 
