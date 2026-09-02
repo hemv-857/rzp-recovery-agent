@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent import ingest_failure, mark_recovered, plan_and_schedule, write_off
+from .audit_chain import get_audit_chain
 from .executor import ChannelAdapter, VoiceProvider, execute_action
 from .measure import build_report, fmt_rupees
 from .models import (
@@ -25,9 +26,12 @@ from .models import (
     FailedPayment,
     Intervention,
 )
+from .network_health import get_network_monitor
 from .promisetopay import Intent, parse_reply
 from .ratelimit import RateLimiter, limit_from_env
 from .razorpay_client import client
+from .recovery_model import get_model
+from .selector import _contact_ladder
 
 app = FastAPI(
     title="Razorpay Revenue Recovery Agent",
@@ -603,3 +607,340 @@ def dashboard() -> HTMLResponse:
     recent = sorted(cases, key=lambda c: c.created_at)[-25:][::-1]
     from .report_html import render_dashboard
     return HTMLResponse(render_dashboard(rep, recent_cases=recent))
+
+
+# --- Recovery Funnel with drop-off accounting ---
+@app.get("/analytics/funnel", tags=["reporting"])
+def recovery_funnel() -> dict[str, Any]:
+    """4-stage recovery funnel with drop-off accounting.
+
+    Stages: Failed Events -> Policy-Eligible -> Interventions Attempted -> Settled Recoveries
+    Drop-offs: Retries Exceeded, Awaiting Approval, Active Promise Paused, Negative-EV Skipped
+    Mirrors modiviveks' recovery funnel.
+    """
+    store = _store()
+    cases = store.all_cases()
+    actions = store.actions_rows()
+
+    total_failed = len(cases)
+    treatment_cases = [c for c in cases if c.group.value == "treatment"]
+
+    # Stage 1: Failed Events (treatment only)
+    stage1 = len(treatment_cases)
+
+    # Stage 2: Policy-Eligible (not blocked by opt-out, cap, expiry, etc.)
+    from .policy import evaluate, Decision
+    cfg = _cfg()
+    now = datetime.now(timezone.utc)
+    eligible = 0
+    drop_retry_exceeded = 0
+    drop_opt_out = 0
+    drop_expiry = 0
+    for c in treatment_cases:
+        gate = evaluate(c, now, cfg, action_is_contact=True, money_action=False, now=now)
+        if gate.decision is Decision.BLOCK:
+            if "attempt_cap" in gate.reason:
+                drop_retry_exceeded += 1
+            elif "opt_out" in gate.reason:
+                drop_opt_out += 1
+            elif "expiry" in gate.reason:
+                drop_expiry += 1
+        else:
+            eligible += 1
+
+    # Stage 3: Interventions Attempted (executed actions)
+    executed_actions = [a for a in actions if a.get("status") == "executed"]
+    # Count unique cases with executed actions
+    cases_with_executed = set(a.get("case_id") for a in executed_actions)
+    stage3 = len(cases_with_executed)
+
+    # Drop-offs at Stage 2->3
+    drop_awaiting_approval = 0
+    drop_promise_paused = 0
+    drop_negative_ev = 0
+    for c in treatment_cases:
+        gate = evaluate(c, now, cfg, action_is_contact=True, money_action=False, now=now)
+        if gate.decision is Decision.DEFER:
+            if "approval" in gate.reason:
+                drop_awaiting_approval += 1
+            elif "quiet_hours" in gate.reason:
+                pass  # just deferred, not dropped
+            else:
+                pass
+        # Check for promise
+        if c.promised_at and not c.recovered_amount:
+            drop_promise_paused += 1
+        # Check negative EV
+        from .selector import select_next_action
+        nxt = select_next_action(c, cfg, now)
+        if nxt is None:
+            drop_negative_ev += 1
+
+    # Stage 4: Settled Recoveries
+    recovered_cases = [c for c in treatment_cases if c.recovered_amount > 0]
+    stage4 = len(recovered_cases)
+
+    return {
+        "stages": [
+            {"name": "Failed Events", "count": stage1, "label": "payment.failed ingested"},
+            {"name": "Policy Eligible", "count": eligible, "label": "passed compliance gate"},
+            {"name": "Interventions Attempted", "count": stage3, "label": "actions executed"},
+            {"name": "Settled Recoveries", "count": stage4, "label": "verified recovered"},
+        ],
+        "drop_offs": {
+            "retries_exceeded": drop_retry_exceeded,
+            "opt_out": drop_opt_out,
+            "case_expiry": drop_expiry,
+            "awaiting_approval": drop_awaiting_approval,
+            "promise_paused": drop_promise_paused,
+            "negative_ev": drop_negative_ev,
+        },
+        "conversion_rates": {
+            "eligible_rate": round(eligible / max(stage1, 1), 4),
+            "execution_rate": round(stage3 / max(eligible, 1), 4),
+            "recovery_rate": round(stage4 / max(stage3, 1), 4),
+            "overall_rate": round(stage4 / max(stage1, 1), 4),
+        },
+    }
+
+
+# --- Model Calibration View (10-decile) ---
+@app.get("/analytics/calibration", tags=["reporting"])
+def model_calibration() -> dict[str, Any]:
+    """10-decile calibration table with predicted vs observed recovery rates.
+
+    Mirrors modiviveks' model calibration view.
+    """
+    store = _store()
+    cases = store.all_cases()
+    model = get_model()
+
+    if not model._trained:
+        return {"error": "model not trained", "deciles": []}
+
+    # Collect predictions and outcomes
+    predictions = []
+    for c in cases:
+        if c.group.value != "treatment":
+            continue
+        from .recovery_model import predict_recovery
+        from .selector import _contact_ladder
+        action = _contact_ladder(c, _cfg())
+        pred = predict_recovery(c, action, len(c.attempt_times),
+                                datetime.now(timezone.utc).isoformat(), _cfg())
+        recovered = 1 if c.recovered_amount > 0 else 0
+        predictions.append((pred.probability, recovered))
+
+    if len(predictions) < 10:
+        return {"error": "insufficient data", "deciles": []}
+
+    # Sort by predicted probability
+    predictions.sort(key=lambda x: x[0])
+    n = len(predictions)
+    decile_size = max(1, n // 10)
+    deciles = []
+
+    for i in range(10):
+        start = i * decile_size
+        end = n if i == 9 else (i + 1) * decile_size
+        bucket = predictions[start:end]
+        if not bucket:
+            continue
+        avg_pred = sum(p for p, _ in bucket) / len(bucket)
+        obs_rate = sum(r for _, r in bucket) / len(bucket)
+        deciles.append({
+            "decile": i + 1,
+            "count": len(bucket),
+            "avg_predicted": round(avg_pred, 4),
+            "observed_rate": round(obs_rate, 4),
+            "calibration_error": round(abs(avg_pred - obs_rate), 4),
+        })
+
+    # Brier score
+    brier = sum((p - r) ** 2 for p, r in predictions) / len(predictions)
+    # ROC-AUC (simplified)
+    from sklearn.metrics import roc_auc_score
+    try:
+        auc = roc_auc_score([r for _, r in predictions], [p for p, _ in predictions])
+    except Exception:
+        auc = None
+
+    return {
+        "deciles": deciles,
+        "brier_score": round(brier, 4),
+        "roc_auc": round(auc, 4) if auc else None,
+        "total_samples": len(predictions),
+    }
+
+
+# --- Decision Inspector with rejected alternatives ---
+@app.get("/cases/{case_id}/decision", tags=["cases"])
+def case_decision(case_id: str) -> dict[str, Any]:
+    """Decision inspector: EV calculations, rejected alternatives, outreach drafts.
+
+    Mirrors modiviveks' decision inspector.
+    """
+    store = _store()
+    case = next((c for c in store.all_cases() if c.case_id == case_id), None)
+    if not case:
+        raise HTTPException(404, "case not found")
+
+    cfg = _cfg()
+    now = datetime.now(timezone.utc)
+
+    from .recovery_model import predict_recovery
+    from .selector import select_next_action, _contact_ladder
+    from .policy import evaluate, Decision, economic_stop
+    from .models import ActionType
+
+    # Get selected action
+    selected = select_next_action(case, cfg, now)
+
+    # Evaluate all candidate actions
+    candidates = [
+        ActionType.RETRY_PAYMENT_LINK,
+        ActionType.RETRY_CHARGE,
+        ActionType.NUDGE_WHATSAPP,
+        ActionType.NUDGE_SMS,
+        ActionType.NUDGE_EMAIL,
+        ActionType.NUDGE_VOICE,
+        ActionType.ESCALATE_HUMAN,
+    ]
+
+    alternatives = []
+    for act in candidates:
+        pred = predict_recovery(case, act, len(case.attempt_times),
+                                now.isoformat(), cfg)
+        ev = pred.probability * case.amount
+        # Approximate costs
+        cost_map = {
+            ActionType.RETRY_PAYMENT_LINK: 500,
+            ActionType.RETRY_CHARGE: 200,
+            ActionType.NUDGE_WHATSAPP: 800,
+            ActionType.NUDGE_SMS: 300,
+            ActionType.NUDGE_EMAIL: 100,
+            ActionType.NUDGE_VOICE: 2000,
+            ActionType.ESCALATE_HUMAN: 5000,
+        }
+        cost = cost_map.get(act, 500)
+        net_ev = ev - cost
+
+        gate = evaluate(case, now, cfg,
+                        action_is_contact=act != ActionType.RETRY_CHARGE,
+                        money_action=act in (ActionType.RETRY_CHARGE, ActionType.RETRY_PAYMENT_LINK),
+                        now=now)
+
+        is_selected = (selected is not None and selected.action_type == act)
+        rejected_reason = None
+        if not is_selected:
+            if gate.decision is Decision.BLOCK:
+                rejected_reason = f"policy: {gate.reason}"
+            elif economic_stop(case, pred.probability):
+                rejected_reason = "negative EV (economic stop)"
+            elif net_ev <= 0:
+                rejected_reason = "negative net EV"
+            else:
+                rejected_reason = "lower EV than selected"
+
+        alternatives.append({
+            "action": act.value,
+            "predicted_recovery": pred.probability,
+            "expected_recovery_paise": round(ev),
+            "cost_paise": cost,
+            "net_ev_paise": round(net_ev),
+            "policy_decision": gate.decision.value,
+            "policy_reason": gate.reason,
+            "selected": is_selected,
+            "rejected_reason": rejected_reason,
+        })
+
+    # Sort by net EV descending
+    alternatives.sort(key=lambda x: -x["net_ev_paise"])
+
+    return {
+        "case_id": case.case_id,
+        "failure_class": case.failure_class.value,
+        "amount_paise": case.amount,
+        "selected_action": selected.action_type.value if selected else "NO_ACTION",
+        "selected_reasoning": selected.reasoning if selected else {"reason": "economic_stop or no eligible action"},
+        "alternatives": alternatives,
+    }
+
+
+# --- Audit chain verification ---
+@app.get("/audit/chain/verify", tags=["reporting"])
+def verify_audit_chain() -> dict[str, Any]:
+    """Verify SHA-256 hash chain integrity. Mirrors modiviveks' audit trail verify."""
+    store = _store()
+    valid, broken_idx = store.verify_audit_chain()
+    return {
+        "valid": valid,
+        "broken_at_index": broken_idx,
+        "total_links": len(get_audit_chain()),
+    }
+
+
+@app.get("/audit/chain/link/{event_id}", tags=["reporting"])
+def get_audit_link(event_id: str) -> dict[str, Any]:
+    """Get audit chain link details for a specific event."""
+    store = _store()
+    link = store.get_audit_link(event_id)
+    if not link:
+        raise HTTPException(404, "event not found in chain")
+    return link
+
+
+# --- Network Health / Degradation Status ---
+@app.get("/analytics/network-health", tags=["reporting"])
+def network_health() -> dict[str, Any]:
+    """Payment network health status with degradation detection.
+
+    Mirrors modiviveks' network health monitor.
+    """
+    statuses = get_network_status()
+    return {
+        "methods": [{
+            "method": s.method,
+            "baseline_success_rate": round(s.baseline_rate, 4),
+            "current_success_rate": round(s.current_rate, 4),
+            "drop_percentage": round(s.drop_pct * 100, 2),
+            "status": s.status,
+            "hypothesis": s.hypothesis,
+        } for s in statuses],
+        "overall": "CRITICAL" if any(s.status == "CRITICAL" for s in statuses)
+        else "MODERATE" if any(s.status == "MODERATE" for s in statuses)
+        else "HEALTHY",
+    }
+
+
+# --- Segment Breakdown ---
+@app.get("/analytics/segments", tags=["reporting"])
+def segment_breakdown() -> dict[str, Any]:
+    """Performance by merchant segment (simulated via amount tiers).
+
+    Mirrors modiviveks' segment breakdown.
+    """
+    store = _store()
+    cases = store.all_cases()
+
+    segments = {
+        "standard": {"min": 0, "max": 100000},
+        "growth": {"min": 100000, "max": 500000},
+        "enterprise": {"min": 500000, "max": float("inf")},
+    }
+
+    result = {}
+    for name, bounds in segments.items():
+        seg_cases = [c for c in cases if bounds["min"] <= c.amount < bounds["max"]]
+        if not seg_cases:
+            result[name] = {"cases": 0, "recovery_rate": 0, "avg_amount": 0}
+            continue
+        recovered = sum(1 for c in seg_cases if c.recovered_amount > 0)
+        result[name] = {
+            "cases": len(seg_cases),
+            "recovery_rate": round(recovered / len(seg_cases), 4),
+            "avg_amount": round(sum(c.amount for c in seg_cases) / len(seg_cases)),
+            "total_at_risk": sum(c.amount for c in seg_cases),
+            "total_recovered": sum(c.recovered_amount for c in seg_cases),
+        }
+    return {"segments": result}

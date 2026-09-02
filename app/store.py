@@ -11,6 +11,7 @@ from .models import (
     Intervention,
     RecoveryCase,
 )
+from .audit_chain import chain_append, get_audit_chain
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS cases (
@@ -41,7 +42,10 @@ CREATE TABLE IF NOT EXISTS audit (
   actor TEXT,
   event_type TEXT,
   case_id TEXT,
-  payload TEXT
+  payload TEXT,
+  chain_hash TEXT,
+  prev_hash TEXT,
+  chain_index INTEGER
 );
 CREATE TABLE IF NOT EXISTS webhook_events (
   event_id TEXT PRIMARY KEY,
@@ -183,13 +187,27 @@ class Store:
 
     # ---- audit -------------------------------------------------------
     def append_audit(self, event: AuditEvent) -> None:
+        link = chain_append(event)
         self.conn.execute(
-            "INSERT INTO audit (event_id,ts,actor,event_type,case_id,payload) "
-            "VALUES (?,?,?,?,?,?)",
+            "INSERT INTO audit (event_id,ts,actor,event_type,case_id,payload,chain_hash,prev_hash,chain_index) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (event.event_id, event.ts, event.actor, event.event_type,
-             event.case_id, json.dumps(event.payload)),
+             event.case_id, json.dumps(event.payload), link.hash, link.prev_hash, link.index),
         )
         self.conn.commit()
+
+    def verify_audit_chain(self) -> tuple[bool, int | None]:
+        """Verify the hash chain integrity from database."""
+        return get_audit_chain().verify()
+
+    def get_audit_link(self, event_id: str) -> dict[str, Any] | None:
+        row = self.conn.execute(
+            "SELECT chain_hash, prev_hash, chain_index FROM audit WHERE event_id=?",
+            (event_id,),
+        ).fetchone()
+        if row:
+            return {"chain_hash": row[0], "prev_hash": row[1], "chain_index": row[2]}
+        return None
 
     def audit_for(self, case_id: str) -> list[dict[str, Any]]:
         rows = self.conn.execute(

@@ -88,8 +88,46 @@ def select_next_action(
     contact_n = len(case.attempt_times)
     r = cfg["retry"]
 
-    # Economic stopping rule: don't chase when expected recovery < 3x action cost
-    # Ponytail: simple threshold, add per-channel cost breakdown if granularity matters
+    # Explicit NO_ACTION: evaluate all candidates, if max net EV <= 0, do nothing
+    # Mirrors modiviveks' explicit NO_ACTION when all actions have negative EV
+    from .recovery_model import predict_recovery
+    from .policy import economic_stop
+
+    candidates = [
+        ActionType.RETRY_PAYMENT_LINK,
+        ActionType.RETRY_CHARGE,
+        ActionType.NUDGE_WHATSAPP,
+        ActionType.NUDGE_SMS,
+        ActionType.NUDGE_EMAIL,
+        ActionType.NUDGE_VOICE,
+        ActionType.ESCALATE_HUMAN,
+    ]
+
+    cost_map = {
+        ActionType.RETRY_PAYMENT_LINK: 500,
+        ActionType.RETRY_CHARGE: 200,
+        ActionType.NUDGE_WHATSAPP: 800,
+        ActionType.NUDGE_SMS: 300,
+        ActionType.NUDGE_EMAIL: 100,
+        ActionType.NUDGE_VOICE: 2000,
+        ActionType.ESCALATE_HUMAN: 5000,
+    }
+
+    best_ev = -1
+    best_action = None
+    for act in candidates:
+        pred = predict_recovery(case, act, contact_n, now.isoformat(), cfg)
+        ev = pred.probability * case.amount
+        cost = cost_map.get(act, 500)
+        net_ev = ev - cost
+        if net_ev > best_ev:
+            best_ev = net_ev
+            best_action = act
+
+    if best_ev <= 0:
+        return None  # Explicit NO_ACTION: all actions have negative net EV
+
+    # Economic stopping rule (Recoup-style): stop when expected_recovery < 3x action_cost
     if economic_stop(case, predicted_recovery_prob=0.3):
         return None
 

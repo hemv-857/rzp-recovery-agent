@@ -36,6 +36,14 @@ Every public claim backed to a file, test, or run command.
 | **14 failure categories** | `app/models.py:FailureClass` + `app/classifier.py:_RULES` — CARD_EXPIRED, GATEWAY_TIMEOUT, PRICE_SHOCK, OVERDUE_GENUINE added. |
 | **Case detail timeline with Hinglish scripts** | `app/main.py:/cases/{case_id}/detail` — full timeline: detection → diagnosis → intervention → outcome. |
 | **Editable compliance settings** | `app/main.py:/settings` — max_attempts, quiet_hours, DND list, discount_pct, escalation_threshold. Mirrors Swarajkarle. |
+| **Cryptographic hash-chained audit trail** | `app/audit_chain.py:AuditChain` — SHA-256 chain (H_i = SHA256(H_{i-1} || step || payload)), verify endpoint. Mirrors modiviveks. |
+| **Payment network degradation detector** | `app/network_health.py:NetworkHealthMonitor` — rolling success rates per method, MODERATE/CRITICAL flags. Mirrors modiviveks. |
+| **Recovery funnel with drop-off accounting** | `app/main.py:/analytics/funnel` — 4 stages + drop-offs (retries_exceeded, opt_out, awaiting_approval, promise_paused, negative_ev). Mirrors modiviveks, bhuvanteja. |
+| **Model calibration view (10-decile)** | `app/main.py:/analytics/calibration` — predicted vs observed per decile, Brier score, ROC-AUC. Mirrors modiviveks. |
+| **Decision inspector with rejected alternatives** | `app/main.py:/cases/{id}/decision` — EV calculations, policy decisions, rejected reasons for all candidates. Mirrors modiviveks. |
+| **Explicit NO_ACTION when EV negative** | `app/selector.py:select_next_action` — evaluates all candidates, returns None if max net EV <= 0. Mirrors modiviveks. |
+| **Segment breakdown by amount tier** | `app/main.py:/analytics/segments` — Standard/Growth/Enterprise tiers with recovery rates. Mirrors modiviveks. |
+| **Audit chain verification endpoint** | `app/main.py:/audit/chain/verify` — validates SHA-256 chain integrity. Mirrors modiviveks. |
 
 ## How to reproduce
 
