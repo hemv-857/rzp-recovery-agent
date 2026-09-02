@@ -111,6 +111,22 @@ def evaluate(
     return PolicyDecision(Decision.EXECUTE, "policy_clear")
 
 
+def economic_stop(
+    case: RecoveryCase,
+    predicted_recovery_prob: float,
+    action_cost_paise: int = 500,       # ~₹5 per action (channel cost + nuisance)
+    multiplier: float = 3.0,             # expected recovery >= multiplier * cost
+) -> bool:
+    """Return True if the action is not economically worth executing.
+
+    Recoup-style: stop chasing when expected_recovery < multiplier * action_cost.
+    This prevents value-destroying recovery attempts on small subscriptions
+    where the human/collection time costs more than the revenue.
+    """
+    expected_recovery = predicted_recovery_prob * case.amount
+    return expected_recovery < multiplier * action_cost_paise
+
+
 def should_write_off(case: RecoveryCase, now: datetime, cfg: dict[str, Any]) -> bool:
     created = datetime.fromisoformat(case.created_at)
     final_window = timedelta(hours=cfg["policy"]["final_followup_hours"])

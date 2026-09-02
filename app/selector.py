@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .models import ActionType, FailureClass, Intervention, RecoveryCase
+from .policy import economic_stop
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -65,6 +66,11 @@ def select_next_action(
     cls = case.failure_class
     contact_n = len(case.attempt_times)
     r = cfg["retry"]
+
+    # Economic stopping rule: don't chase when expected recovery < 3x action cost
+    # Ponytail: simple threshold, add per-channel cost breakdown if granularity matters
+    if economic_stop(case, predicted_recovery_prob=0.3):
+        return None
 
     if cls is FailureClass.NETWORK_TIMEOUT:
         kind = (

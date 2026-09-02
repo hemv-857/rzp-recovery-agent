@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
 from .models import FailureClass, RecoveryCase
+
+UTC = timezone.utc
 
 
 class DegradationState(str, Enum):
@@ -115,7 +117,7 @@ class DegradationDetector:
         self._windows[key] = [t for t in self._windows[key] if t >= cutoff]
 
     def summary(self) -> dict[str, Any]:
-        signals = self.evaluate(datetime.utcnow())
+        signals = self.evaluate(datetime.now(UTC))
         return {
             "signals": [
                 {"scope": s.scope, "state": s.state.value,
