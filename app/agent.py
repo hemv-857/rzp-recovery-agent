@@ -6,6 +6,8 @@ from collections.abc import Callable
 from datetime import datetime
 
 from .classifier import classify
+from .degradation import DegradationDetector
+from .explain import Explanation, explain_decision
 from .models import (
     ActionType,
     AuditEvent,
@@ -16,7 +18,20 @@ from .models import (
     Intervention,
     RecoveryCase,
 )
+from .recovery_model import RecoveryModel, predict_recovery
 from .selector import select_next_action
+
+# module-level singletons — retrained per batch
+_degradation = DegradationDetector()
+_recovery_model = RecoveryModel()
+
+
+def get_degradation_detector() -> DegradationDetector:
+    return _degradation
+
+
+def get_recovery_model() -> RecoveryModel:
+    return _recovery_model
 
 
 def ingest_failure(
@@ -42,6 +57,11 @@ def ingest_failure(
         created_at=fp.failed_at,
     )
     store.upsert_case(case)
+
+    # feed degradation detector
+    _degradation.record_failure(case, datetime.fromisoformat(fp.failed_at)
+                                if isinstance(fp.failed_at, str) else fp.failed_at)
+
     store.append_audit(AuditEvent(
         actor="classifier", event_type="case.created", case_id=case.case_id,
         payload={
@@ -65,9 +85,30 @@ def plan_and_schedule(
     """Pick the next action for an active case and persist it as scheduled."""
     if case.status in (CaseStatus.RECOVERED, CaseStatus.WRITTEN_OFF):
         return None
+
+    contact_n = len(case.attempt_times)
     action = select_next_action(case, cfg, now)
     if action is None:
         return None
+
+    # ML prediction + explanation
+    prediction = predict_recovery(
+        case, action.action_type, contact_n, now.isoformat(), cfg,
+    )
+    explanation = explain_decision(
+        case, action.action_type, prediction, contact_n,
+        strategy=action.reasoning.get("strategy"),
+    )
+
+    # attach ML context to reasoning
+    action.reasoning["recovery_probability"] = prediction.probability
+    action.reasoning["model_confidence"] = prediction.confidence
+    action.reasoning["explanation_summary"] = explanation.summary()
+
+    # degradation context
+    if _degradation.is_degraded():
+        action.reasoning["degradation_detected"] = True
+
     store.save_action(action)
     store.append_audit(AuditEvent(
         actor="selector", event_type="action.scheduled", case_id=case.case_id,
@@ -75,6 +116,8 @@ def plan_and_schedule(
             "action_id": action.action_id,
             "type": action.action_type.value,
             "scheduled_at": action.scheduled_at,
+            "recovery_probability": prediction.probability,
+            "model_confidence": prediction.confidence,
             **action.reasoning,
         },
     ))
