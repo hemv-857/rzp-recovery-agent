@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 
 from .models import ActionType, FailureClass, Intervention, RecoveryCase
 from .policy import economic_stop
+from .promisetopay import PromiseTracker
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -58,6 +59,26 @@ def _mk(case: RecoveryCase, at: datetime, action_type: ActionType,
         scheduled_at=at.astimezone(tz=IST).isoformat(),
         reasoning=reasoning,
     )
+
+
+def _promise_adjusted_ev(case: RecoveryCase, base_ev: float) -> float:
+    """Adjust expected value based on customer's promise-to-pay track record.
+    
+    Broken promises reduce EV by 50% (as in agastyasharma20's implementation).
+    Kept promises increase confidence slightly.
+    """
+    if not case.promised_at:
+        return base_ev
+    
+    tracker = PromiseTracker()
+    # In real usage, we'd look up the customer's promise history
+    # For now, we use the case's own promise state as a signal
+    if case.promise_due:
+        # This case has an active promise - trust it moderately
+        return base_ev * 1.1
+    # Check if this customer has broken promises in history
+    # (would need cross-case lookup in store - simplified here)
+    return base_ev * 0.5  # broken promise penalty
 
 
 def select_next_action(

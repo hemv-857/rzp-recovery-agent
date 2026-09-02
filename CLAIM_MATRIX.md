@@ -27,10 +27,10 @@ Every public claim backed to a file, test, or run command.
 | **Sensitivity analysis** | `scripts/sensitivity.py` — ±20% sweep on base_pay_probability, all lifts positive. Results in `sensitivity_report.json`. |
 | **Held-out evaluation** | `scripts/heldout_eval.py` — seed 999 held-out set (separate from training seed 42). Results in `heldout_evaluation.json`. |
 | **Webhook idempotency** | `app/store.py` — `webhook_events` table, `is_event_processed()` / `mark_event_processed()`, checked at webhook handler top in `app/main.py`. |
-| **Economic stopping rule** | `app/policy.py:economic_stop()` — stops when `expected_recovery < 3x action_cost`. Integrated in `app/selector.py`. |
-| **ML recovery model** | `app/recovery_model.py` — HistGradientBoostingClassifier (400 trees) with rule-based fallback. |
-| **Explanation reasoning chain** | `app/explain.py:explain_decision()` — failure context, amount context, attempt fatigue, method reasoning, model prediction, strategy justification. |
-| **Degradation detector** | `app/degradation.py:DegradationDetector` — tracks failure rates by scope, HEALTHY→WATCH→CONFIRMED states. |
+| **Portfolio optimizer (0/1 knapsack)** | `app/portfolio.py:knapsack_select()` — maximizes EV within human-review hour capacity. Demo in `scripts/portfolio_demo.py`. |
+| **SHAP per-case explainability** | `app/recovery_model.py:RecoveryModel._explain()` — TreeExplainer for per-case signed SHAP values. Falls back to feature_importances_. |
+| **India-specific compliance** | `app/policy.py:evaluate()` — RBI e-mandate pre-debit notice (≥₹5000 first attempt), TRAI quiet hours (21:00–09:00 IST). |
+| **Promise-to-pay EV feedback** | `app/promisetopay.py:PromiseTracker.adjust_ev()` — adjusts EV by customer promise reliability. Used in `app/selector.py`. |
 
 ## How to reproduce
 

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .models import CaseStatus, Decision, Group, RecoveryCase
+from .models import CaseStatus, Decision, FailureClass, Group, RecoveryCase
 
 IST = ZoneInfo("Asia/Kolkata")
 UTC = timezone.utc
@@ -79,6 +79,20 @@ def evaluate(
         return PolicyDecision(
             Decision.DEFER, "above_auto_action_cap_needs_human_approval",
             context={"requires": "human_approval"},
+        )
+
+    # India-specific: RBI e-mandate pre-debit notice
+    # For mandate issues >= ₹5000 on first attempt, must send 24h pre-debit notice
+    if (
+        case.failure_class is FailureClass.MANDATE_ISSUE
+        and case.amount >= 500_000  # ₹5000 in paise
+        and len(case.attempt_times) == 0
+        and not case.pre_debit_notice_sent
+    ):
+        return PolicyDecision(
+            Decision.DEFER, "rbi_pre_debit_notice_required",
+            execute_at=proposed + timedelta(hours=24),
+            context={"regulation": "rbi_e_mandate", "notice_hours": 24},
         )
 
     if case.attempts_in_window(p["attempt_window_hours"], now) >= p["max_attempts_per_case"]:

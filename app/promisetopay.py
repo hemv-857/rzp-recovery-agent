@@ -6,7 +6,7 @@ Intents: OPT_OUT | ALREADY_PAID | PROMISE(due) | REFUSED | OTHER
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from zoneinfo import ZoneInfo
@@ -36,6 +36,65 @@ class ParsedReply:
     intent: Intent
     due: datetime | None = None            # for PROMISE
     note: str = ""                         # matched raw text snippet
+
+
+@dataclass
+class PromiseTracker:
+    """Tracks customer promise-to-pay reliability for EV adjustment.
+    
+    In production, this would query cross-case history. For the demo,
+    it uses in-memory tracking with a simple heuristic.
+    """
+    customer_promises: dict[str, list[dict]] = field(default_factory=dict)
+
+    def record_promise(self, customer_id: str, due: datetime, kept: bool | None = None):
+        """Record a promise for a customer."""
+        if customer_id not in self.customer_promises:
+            self.customer_promises[customer_id] = []
+        self.customer_promises[customer_id].append({
+            "due": due.isoformat(),
+            "kept": kept,
+            "recorded_at": datetime.now(tz=IST).isoformat(),
+        })
+
+    def mark_kept(self, customer_id: str, due: datetime):
+        """Mark a specific promise as kept."""
+        promises = self.customer_promises.get(customer_id, [])
+        for p in promises:
+            if p["due"] == due.isoformat() and p["kept"] is None:
+                p["kept"] = True
+                break
+
+    def mark_broken(self, customer_id: str, due: datetime):
+        """Mark a specific promise as broken."""
+        promises = self.customer_promises.get(customer_id, [])
+        for p in promises:
+            if p["due"] == due.isoformat() and p["kept"] is None:
+                p["kept"] = False
+                break
+
+    def get_reliability_score(self, customer_id: str) -> float:
+        """Get promise reliability score (0.0 to 1.0).
+        
+        Returns 0.5 for unknown customers, higher for good track records.
+        """
+        promises = self.customer_promises.get(customer_id, [])
+        if not promises:
+            return 0.5  # neutral prior
+        
+        evaluated = [p for p in promises if p["kept"] is not None]
+        if not evaluated:
+            return 0.5  # no outcomes yet
+        
+        kept = sum(1 for p in evaluated if p["kept"])
+        return kept / len(evaluated)
+
+    def adjust_ev(self, base_ev: float, customer_id: str) -> float:
+        """Adjust expected value based on promise reliability."""
+        reliability = self.get_reliability_score(customer_id)
+        # Linear interpolation: 0.0 reliability -> 0.5x EV, 1.0 reliability -> 1.1x EV
+        multiplier = 0.5 + (reliability * 0.6)
+        return base_ev * multiplier
 
 
 def _ist_now() -> datetime:

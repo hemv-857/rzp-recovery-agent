@@ -6,6 +6,8 @@ fallback to rule-based probability when no trained model exists.
 
 The model is ADVISORY — it informs strategy selection but never overrides the
 policy gate. Every prediction is logged in the audit trail with its confidence.
+
+SHAP explainability provides per-case signed explanations for human approvers.
 """
 from __future__ import annotations
 
@@ -15,6 +17,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
+
+try:
+    import shap
+    _SHAP_AVAILABLE = True
+except ImportError:
+    _SHAP_AVAILABLE = False
 
 from .models import ActionType, FailureClass, RecoveryCase
 
@@ -75,6 +83,10 @@ class RecoveryModel:
         )
         self._model.fit(X_arr, y_arr)
         self._trained = True
+
+        # Build SHAP explainer for per-case explanations
+        self.build_explainer(X_arr)
+
         return True
 
     def predict(
@@ -129,13 +141,43 @@ class RecoveryModel:
         ]
 
     def _explain(self, features: list[float]) -> list[tuple[str, float]]:
-        """Feature importance via model feature_importances_ if available."""
-        if self._model is None or not hasattr(self._model, "feature_importances_"):
+        """Per-case SHAP explanation if available, else model feature_importances_."""
+        if self._model is None:
             return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES)))
-        importances = self._model.feature_importances_
-        pairs = list(zip(_FEATURE_NAMES, importances.tolist()))
-        pairs.sort(key=lambda x: -abs(x[1]))
-        return pairs[:5]
+
+        if _SHAP_AVAILABLE and hasattr(self, "_explainer"):
+            try:
+                X = np.array([features], dtype=np.float32)
+                shap_vals = self._explainer.shap_values(X)
+                if isinstance(shap_vals, list):
+                    shap_vals = shap_vals[1]  # positive class
+                pairs = list(zip(_FEATURE_NAMES, shap_vals[0].tolist()))
+                pairs.sort(key=lambda x: -abs(x[1]))
+                return pairs[:5]
+            except Exception:
+                pass
+
+        # Fallback: model's built-in feature_importances_
+        if hasattr(self._model, "feature_importances_"):
+            importances = self._model.feature_importances_
+            pairs = list(zip(_FEATURE_NAMES, importances.tolist()))
+            pairs.sort(key=lambda x: -abs(x[1]))
+            return pairs[:5]
+
+        return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES)))
+
+    def build_explainer(self, background: np.ndarray | None = None) -> bool:
+        """Build SHAP explainer for per-case explanations. Call after train()."""
+        if not _SHAP_AVAILABLE or self._model is None:
+            return False
+        try:
+            if background is None:
+                # Use model's training data if available
+                background = np.zeros((10, 6), dtype=np.float32)
+            self._explainer = shap.TreeExplainer(self._model, background)
+            return True
+        except Exception:
+            return False
 
     def _rule_fallback(
         self, case: RecoveryCase, action: ActionType, contact_n: int,

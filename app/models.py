@@ -117,6 +117,7 @@ class RecoveryCase(BaseModel):
     written_off_reason: str = ""
     promised_at: str = ""                  # promise-to-pay tracking
     promise_due: str = ""
+    pre_debit_notice_sent: bool = False    # RBI e-mandate pre-debit notice tracking
     created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
 
