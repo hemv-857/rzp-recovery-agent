@@ -360,6 +360,16 @@
             return () => clearInterval(id);
         }, [running, fetchBaseline]);
 
+        // Auto-run batch on first load if no data
+        const didAutoRun = useRef(false);
+        useEffect(() => {
+            if(!loading && !error && rep && !didAutoRun.current) {
+                didAutoRun.current = true;
+                const cases = rep.batch?.cases || 0;
+                if(cases === 0) runBatch();
+            }
+        }, [loading, error, rep, runBatch]);
+
         const runBatch = useCallback(() => {
             if(running) return;
             setRunning(true);
