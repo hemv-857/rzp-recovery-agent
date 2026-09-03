@@ -251,13 +251,13 @@
         );
     }
 
-    function CasesTable({cases}) {
+    function CasesTable({cases, onCaseClick}) {
         return (
             <div className="card a-fu" style={{marginBottom:20}}>
-                <div className="card-h"><span className="card-t">Recent cases</span><span className="card-b">click for audit trail</span></div>
+                <div className="card-h"><span className="card-t">Recent cases</span><span className="card-b">click a case for audit trail</span></div>
                 <table><thead><tr><th>Case</th><th>Class</th><th>Amount</th><th>Status</th><th>Recovered</th></tr></thead>
-                <tbody>{cases.length?cases.map(c=><tr key={c.case_id}>
-                    <td><a className="cl" href={`/audit/${c.case_id}`} target="_blank">{c.case_id}</a></td>
+                <tbody>{cases.length?cases.map(c=><tr key={c.case_id} onClick={()=>onCaseClick(c.case_id)} style={{cursor:"pointer"}}>
+                    <td>{c.case_id}</td>
                     <td>{esc(c.failure_class.replace(/_/g," "))}</td><td>{fmt(c.amount_paise)}</td>
                     <td><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span>{c.written_off_reason?` — ${c.written_off_reason.replace(/_/g," ")}`:""}</td>
                     <td>{c.recovered_amount_paise?fmt(c.recovered_amount_paise):"—"}</td>
@@ -315,6 +315,8 @@
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState(false);
         const [roiOpen, setRoiOpen] = useState(false);
+        const [auditOpen, setAuditOpen] = useState(false);
+        const [selectedCase, setSelectedCase] = useState(null);
         const [security, setSecurity] = useState(null);
         const [budget, setBudget] = useState(null);
         const [bandit, setBandit] = useState(null);
@@ -492,7 +494,7 @@
                         <span className="cap">every block is audit-logged</span>
                     </div>
                 </div>
-                <CasesTable cases={cases}/>
+                <CasesTable cases={cases} onCaseClick={cid => {setSelectedCase(cid); setAuditOpen(true);}}/>
 
                 {/* ── Security Panel ── */}
                 {security && <div className="card a-fu" style={{marginBottom:20}}>
@@ -613,7 +615,99 @@
                 </div>
             </div>
             <ROIModal open={roiOpen} onClose={()=>setRoiOpen(false)}/>
+            <AuditModal open={auditOpen} onClose={()=>setAuditOpen(false)} caseId={selectedCase} API={API}/>
         </>);
+    }
+
+    function AuditModal({open, onClose, caseId, API}) {
+        const [detail, setDetail] = useState(null);
+        const [loading, setLoading] = useState(true);
+        useEffect(() => {
+            if(caseId) {
+                setLoading(true);
+                fetch(`${API}/cases/${caseId}/detail`)
+                    .then(r => r.ok ? r.json() : Promise.reject())
+                    .then(d => { setDetail(d); setLoading(false); })
+                    .catch(() => { setLoading(false); });
+            }
+        }, [caseId, API]);
+        if(!open) return null;
+        if(loading) return (
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+                <div className="modal-c"><div style={{padding:"40px",textAlign:"center",color:"var(--sec)"}}>Loading audit trail…</div></div>
+            </div>
+        );
+        if(!detail) return (
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+                <div className="modal-c"><div style={{padding:"40px",textAlign:"center",color:"var(--red)"}}>Failed to load audit trail</div></div>
+            </div>
+        );
+        const {case: c, actions, audit} = detail;
+        const actorColor = {"classifier":"var(--blu)","selector":"var(--pur)","executor":"var(--grn)","policy":"var(--yel)","system":"var(--dim)"};
+        const eventIcon = {"case.created":"📝","action.scheduled":"⏰","action.executed":"▶️","action.deferred":"⏸️","action.blocked":"🚫","case.written_off":"🗑️","case.recovered":"✅"};
+        return (
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+                <div className="modal-c" style={{maxWidth:900,maxHeight:"85vh",overflow:"auto"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                        <h2>Audit Trail — {c.case_id}</h2>
+                        <button className="bs" onClick={onClose}>Close</button>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Failure Class</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{c.failure_class.replace(/_/g," ")}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Amount</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{c.amount_paise ? (c.amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "—"}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Status</div>
+                            <div style={{fontSize:14,fontWeight:600}}><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span></div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Group</div>
+                            <div style={{fontSize:14,fontWeight:600,color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Method</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{c.method?.toUpperCase() || "—"}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Recovered</div>
+                            <div style={{fontSize:14,fontWeight:600,color:c.recovered_amount_paise?"var(--grn)":"var(--dim)"}}>{c.recovered_amount_paise ? (c.recovered_amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "Not recovered"}</div>
+                        </div>
+                    </div>
+                    <div style={{borderTop:"1px solid var(--bdr)",paddingTop:12}}>
+                        <div style={{fontSize:12,fontWeight:600,color:"var(--sec)",marginBottom:8,textTransform:"uppercase",letterSpacing:".05em"}}>Event Log ({audit?.length || 0} events)</div>
+                        <div style={{maxHeight:400,overflowY:"auto"}}>
+                            {audit?.map(e => (
+                                <div key={e.event_id} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",fontSize:12}}>
+                                    <div style={{width:160,color:"var(--dim)",fontSize:10,whiteSpace:"nowrap"}>
+                                        {new Date(e.ts).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})}
+                                    </div>
+                                    <div style={{width:80,fontWeight:600,fontSize:10,textTransform:"uppercase",color:actorColor[e.actor]||"var(--dim)"}}>{e.actor}</div>
+                                    <div style={{flex:1}}>
+                                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                                            <span style={{fontSize:14}}>{eventIcon[e.event_type] || "📌"}</span>
+                                            <span style={{fontWeight:600,textTransform:"capitalize"}}>{e.event_type.replace(/[._]/g," ")}</span>
+                                        </div>
+                                        <div style={{color:"var(--dim)",fontSize:11,marginLeft:22}}>
+                                            {e.event_type==="case.created" && `classified as ${e.classified_as} (${(e.confidence*100).toFixed(0)}% confidence) — ${e.error_description}`}
+                                            {e.event_type==="action.scheduled" && `${e.type} in ${e.delay_min}min — P(recovery) ${(e.recovery_probability*100).toFixed(1)}% [${e.model_confidence}] — ${e.why}`}
+                                            {e.event_type==="action.executed" && `${e.type} — ${e.decision}: ${e.reason}${e.money_action ? ` — ₹${(e.amount_paise/100).toLocaleString("en-IN")}` : ""}`}
+                                            {e.event_type==="action.deferred" && `deferred — ${e.reason} — execute at ${e.execute_at}`}
+                                            {e.event_type==="action.blocked" && `blocked — ${e.reason}`}
+                                            {e.event_type==="case.written_off" && `written off — ${e.reason}`}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
