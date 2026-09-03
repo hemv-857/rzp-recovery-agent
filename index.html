@@ -366,7 +366,8 @@
             setProgress({current:0,total:1});
             setLiveRep(null);
             const wsHost = location.hostname === 'rzp-recovery-agent.vercel.app' ? 'rzp-recovery-agent.onrender.com' : location.host;
-            const ws = new WebSocket(`ws://${wsHost}/ws/replay?seed=42&cases=200`);
+            const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${wsProto}//${wsHost}/ws/replay?seed=42&cases=200`);
             wsRef.current = ws;
             ws.onmessage = (e) => {
                 try {
