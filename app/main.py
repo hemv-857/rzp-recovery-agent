@@ -653,12 +653,13 @@ async def batch_run_stream(
                 ch = "whatsapp" if "whatsapp" in atype else "sms" if "sms" in atype else "email" if "email" in atype else "voice" if "voice" in atype else "retry" if "retry" in atype else "other"
                 recovered = float(a.get("recovered_amount", 0) or 0) > 0
                 _bandit.update(ch, 1.0 if recovered else 0.0)
+                get_budget().spend(ch)
         cases_list = store.all_cases()
         if cases_list:
             batch_size = 50
             for i in range(0, len(cases_list), batch_size):
                 batch = cases_list[i:i+batch_size]
-                recovered = sum(1 for c in batch if c.get("status") == "recovered")
+                recovered = sum(1 for c in batch if c.status.value == "recovered")
                 rate = recovered / len(batch) if batch else 0
                 _cusum.update(rate)
 
@@ -1633,7 +1634,7 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
         run(payments, cfg, store)
         rep = build_report(store.all_cases(), store.actions_rows(), cfg)
 
-        # Update global bandit/cusum from simulation results
+        # Update global bandit/cusum/budget from simulation results
         actions = store.actions_rows()
         for a in actions:
             if a.get("status") == "executed":
@@ -1641,13 +1642,14 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
                 ch = "whatsapp" if "whatsapp" in atype else "sms" if "sms" in atype else "email" if "email" in atype else "voice" if "voice" in atype else "retry" if "retry" in atype else "other"
                 recovered = float(a.get("recovered_amount", 0) or 0) > 0
                 _bandit.update(ch, 1.0 if recovered else 0.0)
+                get_budget().spend(ch)
         # Update CUSUM with recovery rate observations
         cases_list = store.all_cases()
         if cases_list:
             batch_size = 50
             for i in range(0, len(cases_list), batch_size):
                 batch = cases_list[i:i+batch_size]
-                recovered = sum(1 for c in batch if c.get("status") == "recovered")
+                recovered = sum(1 for c in batch if c.status.value == "recovered")
                 rate = recovered / len(batch) if batch else 0
                 _cusum.update(rate)
 
