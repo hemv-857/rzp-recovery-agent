@@ -19,9 +19,9 @@ Every public claim backed to a file, test, or run command.
 | **Economic stopping rule** | `app/policy.py:economic_stop()` — stops when `expected_recovery < 3x action_cost`. Tested in `tests/test_policy.py::test_economic_stop_*`. |
 | **Chart.js memory leak fixed** | `app/static/dashboard.html` — `createIfNotExist()` pattern with `window._chart1`/`window._chart2`. Tested in `tests/test_main.py::test_dashboard_contains_chartjs`. |
 | **Input length validation** | `app/main.py` — `len(billing_id) > 64` → 400. Tested in `tests/test_main.py::test_billing_id_length_rejection`. |
-| **97 tests passing** | `pytest tests/ -q` → `97 passed` |
+| **130 tests passing** | `pytest tests/ -q` → `130 passed` |
 | **Zero hardcoded keys** | `grep -r "sk_live\|sk_test\|key_live\|key_test" app/` → no matches. All secrets via env vars. |
-| **React dashboard via CDN** | `app/static/dashboard.html` — loads React 18 + Babel standalone from unpkg, no build step. Tested in `tests/test_main.py::test_dashboard_contains_chartjs`. |
+| **React dashboard (vendored, no CDN)** | `app/static/dashboard.html` — React 18 + Babel + Chart.js vendored in `static/vendor/`, no external dependencies. Tested in `tests/test_main.py::test_dashboard_contains_chartjs`. |
 | **Custom 404 page** | `app/static/404.html` — animated glitch 404, scanline, particles, terminal output. Served via FastAPI 404 exception handler in `app/main.py`. |
 | **Multi-seed evaluation** | `scripts/evaluate.py` — 5 seeds × 2,500 cases = 7,500 total, pooled bootstrap CI. Results in `evaluation_report.json`. |
 | **Sensitivity analysis** | `scripts/sensitivity.py` — ±20% sweep on base_pay_probability, all lifts positive. Results in `sensitivity_report.json`. |
@@ -64,6 +64,8 @@ Every public claim backed to a file, test, or run command.
 | **Incident log** | `app/incidents.py:IncidentLog` — 7 documented failures with root causes and fixes. Mirrors recoup/reclaim. |
 | **Adversarial LLM test** | `app/adversarial.py:run_adversarial_test()` — corrupt model cannot violate compliance. Mirrors recoup. |
 | **Combined safety report** | `app/main.py:/security/report` — threat model + adversarial + audit chain in one endpoint. |
+| **Live deployment (Vercel + Render)** | Vercel: `rzp-recovery-agent.vercel.app` (dashboard + API proxy). Render: `rzp-recovery-agent.onrender.com` (FastAPI backend). Both verified end-to-end. |
+| **WebSocket live replay** | `app/main.py:/ws/replay` — streams per-case events as JSON for real-time dashboard updates. Vercel connects via `wss://` to Render. |
 
 ## How to reproduce
 

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Revenue Recovery Agent — Dashboard</title>
     <script src="/static/vendor/chart.umd.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="/static/vendor/react.production.min.js"></script>
+    <script src="/static/vendor/react-dom.production.min.js"></script>
+    <script src="/static/vendor/babel.min.js"></script>
     <style>
         :root{--bg:#0a0f1a;--card:rgba(255,255,255,.04);--card-hover:rgba(255,255,255,.07);--bdr:rgba(255,255,255,.08);--bdr-h:rgba(255,255,255,.15);--txt:#f1f5f9;--sec:#94a3b8;--dim:#64748b;--grn:#22c55e;--blu:#3b82f6;--pur:#a78bfa;--red:#ef4444;--yel:#eab308;--cyn:#06b6d4}
         *{margin:0;padding:0;box-sizing:border-box}
@@ -113,9 +113,10 @@
 </head>
 <body>
     <div id="root"></div>
+    <script>window.__API_BASE__ = "";</script>
     <script type="text/babel">
     const {useState,useEffect,useRef,useCallback} = React;
-    const API = location.origin;
+    const API = (typeof window !== 'undefined' && window.__API_BASE__) || location.origin;
     const fmt = p => {if(p==null||isNaN(p))return"—";const r=p/100;if(Math.abs(r)>=1e7)return`₹${(r/1e7).toFixed(2)} Cr`;if(Math.abs(r)>=1e5)return`₹${(r/1e5).toFixed(2)} L`;return`₹${r.toLocaleString("en-IN",{maximumFractionDigits:0})}`};
     const pct = (x,d=1)=>((x||0)*100).toFixed(d);
     const esc = s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));

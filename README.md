@@ -19,6 +19,15 @@ revenue at risk ──▶ classifier ──▶ case ──▶ selector ──▶
 > while every action is policy-gated, auditable, and stops safely through
 > opt-out or human escalation.
 
+## Live Deployments
+
+| URL | Purpose |
+|---|---|
+| **[rzp-recovery-agent.vercel.app](https://rzp-recovery-agent.vercel.app)** | React dashboard (API proxied via Vercel rewrites) |
+| **[rzp-recovery-agent.onrender.com](https://rzp-recovery-agent.onrender.com)** | FastAPI backend + API docs at `/docs` |
+
+Dashboard features: animated hero with incremental lift, treatment vs control bars, spend doughnut, per-class recovery chart, security posture, Thompson Sampling bandit, live WebSocket replay, ROI calculator modal, audit trail drill-down.
+
 ## Judge Run — 5 minutes, no keys
 
 ```bash
@@ -278,17 +287,22 @@ Then wire the traffic:
 Without keys everything runs in simulation mode — identical code paths except
 the delivery sink and payment-link creation, which are stubs.
 
-## React Dashboard + 404 Page
+## React Dashboard
 
-The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, no node_modules):
+The dashboard is a **React 18 app** (vendored scripts, no CDN dependency, no build step):
 
-- **Staggered fade-in animations** on hero, metrics, charts, compliance cards, and tables
+- **Animated hero** with incremental lift, treatment vs control, naive baseline bars
 - **Animated counter numbers** that count up on load
-- **Chart.js integration** with memory-leak-safe destroy/recreate pattern
-- **Spend-by-channel doughnut** and per-class recovery bar chart
-- **Interactive cases table** with clickable audit links
+- **Chart.js integration** with spend-by-channel doughnut and per-class recovery bar chart
+- **Security posture** panel with audit trail integrity checks
+- **Thompson Sampling bandit** allocation visualization
+- **Live WebSocket replay** — click "Run Batch" to watch cases process in real-time
 - **ROI calculator modal** with live calculation against `/calculator`
-- **Custom 404 page** (`/static/404.html`) with glitch-style "404", scanline animation, floating particles, terminal-style error output, and quick links back to dashboard/docs/report
+- **Interactive cases table** with clickable audit drill-down links
+- **Architecture diagram** and 9-feature grid for judges
+- **Tech stack badges** and CTA section
+- **Custom 404 page** (`/static/404.html`) with glitch-style animation
+- Works air-gapped; vendored Chart.js + React + Babel in `/static/vendor/`
 
 ## Repo map
 
@@ -318,12 +332,15 @@ The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, n
 | `app/main.py` | FastAPI: webhooks, inbound replies, approvals, tick, audit, report, WebSocket live replay |
 | `app/razorpay_client.py` | Razorpay test-mode HTTP client / recording stub |
 | `app/notifier.py` | Slack ops alerts (escalations, opt-outs) — best-effort |
-| `app/static/dashboard.html` | **React dashboard** (CDN-loaded, no build step) — animated hero, counter numbers, Chart.js charts, spend doughnut, cases table, ROI modal, custom 404 page — works offline |
+| `app/static/dashboard.html` | **React dashboard** — animated hero, counters, Chart.js, spend doughnut, cases table, ROI modal, WebSocket live replay, architecture diagram |
+| `app/static/404.html` | Custom 404 page with glitch animation |
+| `static/vendor/` | Vendored React 18, Babel standalone, Chart.js (no CDN) |
 | `app/report_html.py` | Dependency-free fallback dashboard if the static bundle is missing |
 | `integrations/` | Mock voice BSP for live demos (no credentials needed) |
 | **Deployment** | |
 | `Dockerfile` | Container image (tzdata for IST quiet hours) |
 | `docker-compose.yml` | API + built-in /tick scheduler + persistent volume |
+| `vercel.json` | Vercel deployment config (API rewrites to Render) |
 | `charts/` | Helm chart: api + ticker + PVC, secrets wired |
 | `.github/workflows/` | CI (lint+smoke+tests) and ghcr.io image publishing |
 | **Config & docs** | |
