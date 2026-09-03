@@ -372,7 +372,7 @@
         useEffect(() => { return () => { if(wsRef.current) wsRef.current.close(); }; }, []);
 
         if(loading) return <div className="ld"><div style={{textAlign:"center"}}><div className="spinner"></div><p style={{color:"var(--dim)"}}>Loading recovery metrics…</p></div></div>;
-        if(error) return <div className="err"><div style={{textAlign:"center"}}><p style={{fontSize:18,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)"}}>Is the API running at {esc(API)}?</p><button className="bp" onClick={fetchAll} style={{marginTop:12}}>Retry</button></div></div>;
+        if(error) { const wrongPort = location.port && location.port !== "8000"; return <div className="err"><div style={{textAlign:"center"}}><p style={{fontSize:18,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)"}}>The API runs on port <b>8000</b>, not {location.port||"unknown"}.</p><div style={{display:"flex",gap:10,justifyContent:"center",marginTop:14}}><a href="http://localhost:8000" className="bp" style={{textDecoration:"none",padding:"10px 18px",borderRadius:8}}>Open on :8000</a><button className="bs" onClick={fetchAll}>Retry</button></div></div></div>; }
 
         const hd=rep.headline||{},batch=rep.batch||{},cost=rep.cost||{},perClass=rep.per_class||{},promises=rep.promises||{};
         const naiveRate=hd.naive_recovery_rate!=null?hd.naive_recovery_rate:null;
