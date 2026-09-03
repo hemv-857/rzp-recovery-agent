@@ -1615,6 +1615,23 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
         run(payments, cfg, store)
         rep = build_report(store.all_cases(), store.actions_rows(), cfg)
 
+        # Update global bandit/cusum from simulation results
+        actions = store.actions_rows()
+        for a in actions:
+            if a.get("status") == "delivered" and a.get("channel"):
+                ch = a["channel"]
+                recovered = a.get("recovered", False)
+                _bandit.update(ch, 1.0 if recovered else 0.0)
+        # Update CUSUM with recovery rate observations
+        cases_list = store.all_cases()
+        if cases_list:
+            batch_size = 50
+            for i in range(0, len(cases_list), batch_size):
+                batch = cases_list[i:i+batch_size]
+                recovered = sum(1 for c in batch if c.get("status") == "recovered")
+                rate = recovered / len(batch) if batch else 0
+                _cusum.update(rate)
+
         await websocket.send_json({
             "type": "done",
             "report": rep,
