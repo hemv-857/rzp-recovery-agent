@@ -388,6 +388,8 @@
                         setLiveRep(msg.report);
                         setRunning(false);
                         ws.close();
+                        // Refresh cases table from server
+                        fetch(`${API}/cases/recent?limit=15`).then(r=>r.json()).then(d=>{ if(d.cases) setCases(d.cases); }).catch(()=>{});
                     } else if(msg.type === "error") {
                         setRunning(false);
                         ws.close();
