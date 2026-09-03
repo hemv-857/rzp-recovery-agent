@@ -97,8 +97,16 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
    recovery, estimated lift — and get a projected incremental recovery, contact
    spend, and cost per recovery. Every assumption is stated.
 10. **Statistical honesty.** 95% CI via 2,000-rep percentile bootstrap, seeded
-    for reproducibility. Treatment/control stratified by failure class at ingest.
-    Naive baseline estimated from world-model parameters.
+     for reproducibility. Treatment/control stratified by failure class at ingest.
+     Naive baseline estimated from world-model parameters.
+11. **Portfolio optimization.** 0/1 knapsack DP solver selects the optimal
+     subset of pending cases for human-review capacity, outperforming greedy
+     baselines on total expected recovery value. `scripts/demo_portfolio.py`.
+12. **SHAP explainability.** Every ML prediction carries per-case signed SHAP
+     values: "amount was high (+0.12), failure class is transient (+0.08)".
+     Three tiers: SHAP → model feature_importances_ → rule fallback.
+13. **WebSocket live replay.** `WS /ws/replay` streams per-case events as JSON
+     so the React dashboard can update in real-time without polling.
 
 ## Razorpay Integration
 
@@ -152,6 +160,12 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 # tests
 .venv/bin/python -m pytest tests -q
+
+# ML model + SHAP explainability demo
+.venv/bin/python scripts/demo_ml.py --n 500
+
+# Portfolio optimization (knapsack vs greedy)
+.venv/bin/python scripts/demo_portfolio.py
 ```
 
 - **API docs**: browse `/docs` for the full OpenAPI spec (webhooks, cases,
@@ -289,6 +303,9 @@ The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, n
 | `app/policy.py` | Compliance/stopping rules — pure functions, unit-tested |
 | `app/copywriter.py` | Hinglish templates + TTS call scripts + opt-out footer |
 | `app/promisetopay.py` | Inbound-reply intent parser (kal / parso / tarikh / STOP / paid) |
+| `app/bandit.py` | Thompson Sampling channel selector (WhatsApp/SMS/Email/Voice) |
+| `app/portfolio.py` | 0/1 knapsack portfolio optimizer for human-review capacity |
+| `app/recovery_model.py` | HistGradientBoosting classifier + SHAP per-case explanations |
 | **Data & measurement** | |
 | `app/models.py` | Domain models (money = integer paise everywhere) |
 | `app/store.py` | SQLite persistence + audit log |
@@ -298,7 +315,7 @@ The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, n
 | `simulate/batch_generator.py` | Synthetic cohort with realistic Indian failure mix |
 | `simulate/engine.py` | Discrete-event simulation of the full loop |
 | **Interfaces** | |
-| `app/main.py` | FastAPI: webhooks, inbound replies, approvals, tick, audit, report |
+| `app/main.py` | FastAPI: webhooks, inbound replies, approvals, tick, audit, report, WebSocket live replay |
 | `app/razorpay_client.py` | Razorpay test-mode HTTP client / recording stub |
 | `app/notifier.py` | Slack ops alerts (escalations, opt-outs) — best-effort |
 | `app/static/dashboard.html` | **React dashboard** (CDN-loaded, no build step) — animated hero, counter numbers, Chart.js charts, spend doughnut, cases table, ROI modal, custom 404 page — works offline |
@@ -313,7 +330,10 @@ The dashboard is now a **React 18 app loaded via CDN** (no build step, no npm, n
 | `configs/templates/` | Merchant presets (B2B receivables / SaaS subs / D2C checkout) |
 | `scripts/run_batch.py` | End-to-end demo → report.json |
 | `scripts/quickstart.sh` | One command: venv → deps → batch → results |
+| `scripts/demo_ml.py` | ML model training + SHAP explainability demo |
+| `scripts/demo_portfolio.py` | 0/1 knapsack vs greedy portfolio optimization |
 | `docs/dashboard.png` | Live screenshot of the report dashboard |
+| `docs/adr/` | Architecture Decision Records (SQLite, Thompson Sampling, control groups, SHAP, rule-first) |
 | `COMPLIANCE.md` | Messaging compliance + data handling, claim-by-claim |
 | `DEPLOYMENT_CHECKLIST.md` | Pre-production verification, every item with its check |
 | `FUTURE_ROADMAP.md` | Vulcan integration story — layers, seams, honest caveats |

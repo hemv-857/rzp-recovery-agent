@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -1572,6 +1572,66 @@ def adversarial_test() -> dict[str, Any]:
     The guardrail blocks every one.
     """
     return run_adversarial_test()
+
+
+# --- WebSocket live replay (real-time dashboard updates) ---
+@app.websocket("/ws/replay")
+async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
+    """WebSocket endpoint for live batch run replay.
+
+    Streams per-case events as JSON so the dashboard can update in real-time
+    without polling. Each message is a dict with type, case_id, and payload.
+    """
+    await websocket.accept()
+    try:
+        from simulate.batch_generator import generate_batch
+        from simulate.engine import run
+
+        cfg = _cfg()
+        store = _store()
+
+        payments = generate_batch(cases, datetime.now(timezone.utc), seed=seed)
+        total = len(payments)
+
+        await websocket.send_json({"type": "start", "total": total, "seed": seed})
+
+        # Stream per-case progress
+        for i, pmt in enumerate(payments):
+            await websocket.send_json({
+                "type": "progress",
+                "current": i + 1,
+                "total": total,
+                "payment_id": pmt.payment_id,
+            })
+            # Small delay so the dashboard can render
+            if (i + 1) % 50 == 0:
+                await asyncio.sleep(0.01)
+
+        # Run the full simulation
+        run(payments, cfg, store)
+        rep = build_report(store.all_cases(), store.actions_rows(), cfg)
+
+        await websocket.send_json({
+            "type": "done",
+            "report": {
+                "cases": rep["batch"]["cases"],
+                "treatment_n": rep["batch"]["treatment_n"],
+                "control_n": rep["batch"]["control_n"],
+                "amount_at_risk": rep["batch"]["amount_at_risk_paise"],
+                "recovery_rate_treatment": rep["headline"]["recovery_rate_treatment"],
+                "recovery_rate_control": rep["headline"]["recovery_rate_control"],
+                "incremental_pp": rep["headline"]["incremental_recovery_pp"],
+                "incremental_money": rep["headline"]["incremental_money_paise"],
+                "opt_outs": rep["cost"]["opt_outs"],
+                "contacts": rep["cost"]["contacts_executed"],
+            },
+        })
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        import contextlib
+        with contextlib.suppress(Exception):
+            await websocket.send_json({"type": "error", "message": str(e)})
 
 
 # --- Combined Safety Report (recoup pattern) ---
