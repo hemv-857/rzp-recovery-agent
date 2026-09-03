@@ -113,9 +113,10 @@
 </head>
 <body>
     <div id="root"></div>
+    <script>window.__API_BASE__ = "https://rzp-recovery-agent.onrender.com";</script>
     <script type="text/babel">
     const {useState,useEffect,useRef,useCallback} = React;
-    const API = location.origin;
+    const API = (typeof window !== 'undefined' && window.__API_BASE__) || location.origin;
     const fmt = p => {if(p==null||isNaN(p))return"—";const r=p/100;if(Math.abs(r)>=1e7)return`₹${(r/1e7).toFixed(2)} Cr`;if(Math.abs(r)>=1e5)return`₹${(r/1e5).toFixed(2)} L`;return`₹${r.toLocaleString("en-IN",{maximumFractionDigits:0})}`};
     const pct = (x,d=1)=>((x||0)*100).toFixed(d);
     const esc = s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -364,7 +365,8 @@
             setRunning(true);
             setProgress({current:0,total:1});
             setLiveRep(null);
-            const ws = new WebSocket(`ws://${location.host}/ws/replay?seed=42&cases=200`);
+            const wsHost = (typeof window !== 'undefined' && window.__API_BASE__) ? new URL(window.__API_BASE__).host : location.host;
+            const ws = new WebSocket(`ws://${wsHost}/ws/replay?seed=42&cases=200`);
             wsRef.current = ws;
             ws.onmessage = (e) => {
                 try {
