@@ -245,6 +245,24 @@ def select_next_action(
             "why": "offer pause/downgrade instead of churn; last automated touch",
         })
 
+    if cls is FailureClass.LATE_AUTH:
+        # Late auth: authorized but capture failed — retry charge immediately
+        # (authorization window is time-limited, typically 24-72h)
+        if contact_n == 0:
+            return _mk(case, now + timedelta(minutes=30), ActionType.RETRY_CHARGE, {
+                "strategy": "late_auth_capture",
+                "why": "payment authorized but not captured; retry within auth window",
+            })
+        if contact_n == 1:
+            return _mk(case, now + timedelta(hours=2), ActionType.NUDGE_WHATSAPP, {
+                "strategy": "late_auth_reauth",
+                "why": "capture failed twice; ask customer to re-authorize via payment link",
+            })
+        return _mk(case, now + timedelta(hours=6), ActionType.ESCALATE_HUMAN, {
+            "strategy": "late_auth_escalation",
+            "why": "auth window closing; human ops to coordinate with bank",
+        })
+
     # UNKNOWN: most conservative — email only
     return _mk(case, now + timedelta(hours=4), ActionType.NUDGE_EMAIL, {
         "strategy": "conservative_unknown",

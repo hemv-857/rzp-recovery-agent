@@ -50,6 +50,7 @@ _FAILUREBaseContext = {
     FailureClass.INVOICE_OVERDUE: "B2B receivable past due",
     FailureClass.SUBSCRIPTION_FAILED: "recurring charge failed",
     FailureClass.SOFT_DECLINE_OTHER: "generic soft decline",
+    FailureClass.LATE_AUTH: "authorized but not captured",
     FailureClass.UNKNOWN: "unclassified failure",
 }
 

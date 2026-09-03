@@ -193,6 +193,7 @@ class RecoveryModel:
             FailureClass.HARD_DECLINE: 0.25,
             FailureClass.MANDATE_ISSUE: 0.40,
             FailureClass.SOFT_DECLINE_OTHER: 0.50,
+            FailureClass.LATE_AUTH: 0.72,  # authorized — high capture probability
             FailureClass.UNKNOWN: 0.35,
         }.get(case.failure_class, 0.35)
 

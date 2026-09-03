@@ -33,6 +33,7 @@ class FailureClass(str, enum.Enum):
     GATEWAY_TIMEOUT = "GATEWAY_TIMEOUT"
     PRICE_SHOCK = "PRICE_SHOCK"
     OVERDUE_GENUINE = "OVERDUE_GENUINE"
+    LATE_AUTH = "LATE_AUTH"
 
 
 class CaseStatus(str, enum.Enum):
@@ -122,6 +123,8 @@ class RecoveryCase(BaseModel):
     promised_at: str = ""                  # promise-to-pay tracking
     promise_due: str = ""
     pre_debit_notice_sent: bool = False    # RBI e-mandate pre-debit notice tracking
+    pending_approval: bool = False         # high-value action awaiting human approval
+    approval_status: str = ""              # pending | approved | rejected
     created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
 

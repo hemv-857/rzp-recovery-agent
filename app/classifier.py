@@ -50,6 +50,9 @@ _RULES: list[tuple[tuple[str, ...], FailureClass, float]] = [
      FailureClass.SOFT_DECLINE_OTHER, 0.6),
     (("gateway_error", "acquirer"),
      FailureClass.ISSUER_UNAVAILABLE, 0.7),
+    (("late_auth", "late authorization", "authorized but not captured", "auth_expired",
+       "capture_failed", "authorization_timed_out"),
+     FailureClass.LATE_AUTH, 0.88),
 ]
 
 _SYSTEM = (

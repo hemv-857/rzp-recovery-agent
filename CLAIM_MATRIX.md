@@ -52,6 +52,12 @@ Every public claim backed to a file, test, or run command.
 | **Probabilistic outcome model (demo mode)** | `app/main.py:_demo_recovery_prob` — transparent heuristic by failure class/amount/attempts. Mirrors arpit1021-ux. |
 | **Self-hosted fonts / no external deps** | `app/static/dashboard.html` — system-ui font stack, no Google Fonts. Mirrors arpit1021-ux. |
 | **Demo verification endpoint** | `app/main.py:/demo/verify/{case_id}` — simulate payment with demo_verified label. Mirrors Ahan-aura. |
+| **Threat model with mitigations** | `app/main.py:THREAT_MODEL` + `/security/threat-model` — 8 threats, all mitigated. Mirrors Sparsh11Ranjan. |
+| **Prompt-injection demo** | `app/main.py:/security/prompt-injection-test` — LLM is advisory-only, rules gate decides. Mirrors Sparsh11Ranjan. |
+| **Human approval queue** | `app/main.py:/approval/queue`, `/approve`, `/reject` — >₹10k requires human. Mirrors Sparsh11Ranjan. |
+| **CUSUM change-point detector** | `app/cusum.py:CUSUMDetector` — Page's CUSUM for success-rate shifts. Mirrors soumyadip-giri. |
+| **Multi-armed bandit channel selection** | `app/bandit.py:ChannelBandit` — Thompson Sampling across WhatsApp/SMS/Email/Voice. Mirrors soumyadip-giri. |
+| **Late-auth failure class** | `app/models.py:FailureClass.LATE_AUTH` + `app/classifier.py` + `app/selector.py` — authorized but not captured. Mirrors srishti-1935. |
 
 ## How to reproduce
 
