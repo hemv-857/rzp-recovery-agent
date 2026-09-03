@@ -1,4 +1,8 @@
 app/
+!app/static/
+app/static/dashboard.html
+app/static/404.html
+app/report_html.py
 simulate/
 scripts/
 tests/
