@@ -125,7 +125,7 @@
         return val;
     }
 
-    function TopBar({cases, treatment, control}) {
+    function TopBar({cases, treatment, control, onRefresh, onRunBatch, running, progress}) {
         return (
             <div className="topbar">
                 <div className="tb-brand">
@@ -133,6 +133,14 @@
                     <div><div className="tb-title">Revenue Recovery Agent</div><div className="tb-sub">Razorpay AI Buildathon 2026 — Track 03</div></div>
                 </div>
                 <div className="tb-acts">
+                    {running && <span style={{fontSize:11,color:"var(--blu)",marginRight:8}}>
+                        {progress.current}/{progress.total} cases
+                    </span>}
+                    {running && <div style={{width:80,height:4,background:"rgba(255,255,255,.1)",borderRadius:2,overflow:"hidden",marginRight:8}}>
+                        <div style={{height:"100%",width:(progress.current/progress.total*100)+"%",background:"var(--blu)",borderRadius:2,transition:"width .2s"}}></div>
+                    </div>}
+                    <button className="bs" onClick={onRefresh} style={{padding:"6px 12px",fontSize:11}} disabled={running}>↻ Refresh</button>
+                    <button className="bp" onClick={onRunBatch} style={{padding:"6px 14px",fontSize:11}} disabled={running}>{running?"Running…":"Run Batch"}</button>
                     <span className="badge">{cases} cases · {treatment}T/{control}C</span>
                 </div>
             </div>
@@ -297,35 +305,74 @@
         const [cusum, setCusum] = useState(null);
         const [incidents, setIncidents] = useState(null);
         const [approval, setApproval] = useState(null);
+        const [running, setRunning] = useState(false);
+        const [progress, setProgress] = useState({current:0,total:1});
+        const wsRef = useRef(null);
 
-        useEffect(() => {
-            Promise.all([
-                fetch(`${API}/report`),
-                fetch(`${API}/cases/recent?limit=15`),
-                fetch(`${API}/security/report`),
-                fetch(`${API}/budget`),
-                fetch(`${API}/analytics/bandit`),
-                fetch(`${API}/analytics/cusum`),
-                fetch(`${API}/incidents`),
-                fetch(`${API}/approval/queue`),
-            ])
-                .then(async ([r1,r2,r3,r4,r5,r6,r7,r8]) => {
-                    if(!r1.ok) throw 0;
-                    setRep(await r1.json());
-                    setCases(r2.ok?(await r2.json()).cases:[]);
-                    setSecurity(r3.ok?await r3.json():null);
-                    setBudget(r4.ok?await r4.json():null);
-                    setBandit(r5.ok?await r5.json():null);
-                    setCusum(r6.ok?await r6.json():null);
-                    setIncidents(r7.ok?await r7.json():null);
-                    setApproval(r8.ok?await r8.json():null);
-                    setLoading(false);
-                })
-                .catch(() => { setError(true); setLoading(false); });
+        const fetchAll = useCallback(async () => {
+            try {
+                const [r1,r2,r3,r4,r5,r6,r7,r8] = await Promise.all([
+                    fetch(`${API}/report`),
+                    fetch(`${API}/cases/recent?limit=15`),
+                    fetch(`${API}/security/report`),
+                    fetch(`${API}/budget`),
+                    fetch(`${API}/analytics/bandit`),
+                    fetch(`${API}/analytics/cusum`),
+                    fetch(`${API}/incidents`),
+                    fetch(`${API}/approval/queue`),
+                ]);
+                if(r1.ok) setRep(await r1.json());
+                if(r2.ok) setCases((await r2.json()).cases);
+                if(r3.ok) setSecurity(await r3.json());
+                if(r4.ok) setBudget(await r4.json());
+                if(r5.ok) setBandit(await r5.json());
+                if(r6.ok) setCusum(await r6.json());
+                if(r7.ok) setIncidents(await r7.json());
+                if(r8.ok) setApproval(await r8.json());
+                setLoading(false);
+                setError(false);
+            } catch(e) { setError(true); setLoading(false); }
         }, []);
 
+        useEffect(() => { fetchAll(); }, [fetchAll]);
+
+        // Auto-refresh every 15s when not running a batch
+        useEffect(() => {
+            if(running) return;
+            const id = setInterval(fetchAll, 15000);
+            return () => clearInterval(id);
+        }, [running, fetchAll]);
+
+        const runBatch = useCallback(() => {
+            if(running) return;
+            setRunning(true);
+            setProgress({current:0,total:1});
+            const ws = new WebSocket(`ws://${location.host}/ws/replay?seed=42&cases=200`);
+            wsRef.current = ws;
+            ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if(msg.type === "start") setProgress({current:0,total:msg.total});
+                    else if(msg.type === "progress") setProgress({current:msg.current,total:msg.total});
+                    else if(msg.type === "done") {
+                        setRunning(false);
+                        ws.close();
+                        fetchAll();
+                    } else if(msg.type === "error") {
+                        setRunning(false);
+                        ws.close();
+                    }
+                } catch(err) {}
+            };
+            ws.onerror = () => { setRunning(false); };
+            ws.onclose = () => { setRunning(false); };
+        }, [running, fetchAll]);
+
+        // Cleanup WebSocket on unmount
+        useEffect(() => { return () => { if(wsRef.current) wsRef.current.close(); }; }, []);
+
         if(loading) return <div className="ld"><div style={{textAlign:"center"}}><div className="spinner"></div><p style={{color:"var(--dim)"}}>Loading recovery metrics…</p></div></div>;
-        if(error) return <div className="err"><div style={{textAlign:"center"}}><p style={{fontSize:18,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)"}}>Is the API running at {esc(API)}?</p></div></div>;
+        if(error) return <div className="err"><div style={{textAlign:"center"}}><p style={{fontSize:18,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)"}}>Is the API running at {esc(API)}?</p><button className="bp" onClick={fetchAll} style={{marginTop:12}}>Retry</button></div></div>;
 
         const hd=rep.headline||{},batch=rep.batch||{},cost=rep.cost||{},perClass=rep.per_class||{},promises=rep.promises||{};
         const naiveRate=hd.naive_recovery_rate!=null?hd.naive_recovery_rate:null;
@@ -333,7 +380,7 @@
         const cpir=cost.cost_per_incremental_recovery_paise;
 
         return (<>
-            <TopBar cases={batch.cases} treatment={batch.treatment_n} control={batch.control_n}/>
+            <TopBar cases={batch.cases} treatment={batch.treatment_n} control={batch.control_n} onRefresh={fetchAll} onRunBatch={runBatch} running={running} progress={progress}/>
             <div className="ctr">
                 <Hero hd={hd} naiveRate={naiveRate}/>
                 <div className="grid m4">
