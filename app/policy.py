@@ -150,3 +150,97 @@ def should_write_off(case: RecoveryCase, now: datetime, cfg: dict[str, Any]) -> 
         return True
     gate = evaluate(case, now, cfg, action_is_contact=False, now=now)
     return gate.decision is Decision.BLOCK
+
+
+# --- Intervention Budget (recoup/reclaim pattern) ---
+# Shared budget across all cases prevents over-contacting the merchant's customer base.
+
+@dataclass
+class InterventionBudget:
+    """Shared intervention budget with atomic deduction.
+    
+    Mirrors recoup's budget atomicity: budget is a shared resource,
+    every action costs from it, and it cannot go negative.
+    """
+    total: int = 500           # max total contacts across all cases
+    remaining: int = 500
+    _by_channel: dict[str, int] | None = None
+
+    def __post_init__(self):
+        if self._by_channel is None:
+            self._by_channel = {
+                "retry": 200,
+                "whatsapp": 150,
+                "sms": 100,
+                "email": 100,
+                "voice": 30,
+                "human": 20,
+            }
+
+    def can_spend(self, channel: str, amount: int = 1) -> bool:
+        """Check if we can afford this action."""
+        if self.remaining < amount:
+            return False
+        ch_budget = self._by_channel.get(channel, 0)
+        return ch_budget >= amount
+
+    def spend(self, channel: str, amount: int = 1) -> bool:
+        """Atomically spend from budget. Returns False if insufficient."""
+        if not self.can_spend(channel, amount):
+            return False
+        self.remaining -= amount
+        self._by_channel[channel] = self._by_channel.get(channel, 0) - amount
+        return True
+
+    @property
+    def utilization(self) -> float:
+        return 1.0 - (self.remaining / self.total) if self.total > 0 else 1.0
+
+    def state(self) -> dict:
+        return {
+            "total": self.total,
+            "remaining": self.remaining,
+            "utilization": round(self.utilization, 4),
+            "by_channel": dict(self._by_channel),
+        }
+
+
+# Module-level budget singleton
+_budget = InterventionBudget()
+
+
+def get_budget() -> InterventionBudget:
+    return _budget
+
+
+# --- TOCTOU Revalidation (recoup pattern) ---
+# Re-check case state immediately before execution to catch opt-outs,
+# recoveries, or other state changes that happened between planning and execution.
+
+def revalidate(case_id: str, store, proposed_action: str) -> dict:
+    """Re-check case state right before execution.
+    
+    Mirrors recoup's TOCTOU guard: plan and execute are separated in time,
+    so the case may have changed (opted out, recovered, written off).
+    
+    Returns:
+        {"ok": bool, "reason": str, "case_status": str}
+    """
+    case = store.get_case(case_id)
+    if not case:
+        return {"ok": False, "reason": "case_not_found", "case_status": "unknown"}
+
+    if case.status is CaseStatus.RECOVERED:
+        return {"ok": False, "reason": "already_recovered", "case_status": "recovered"}
+
+    if case.status is CaseStatus.WRITTEN_OFF:
+        return {"ok": False, "reason": "written_off", "case_status": "written_off"}
+
+    if case.customer.opted_out:
+        return {"ok": False, "reason": "customer_opted_out", "case_status": case.status.value}
+
+    # Check if case has been approved (for high-value actions)
+    if case.pending_approval and case.approval_status != "approved":
+        return {"ok": False, "reason": "pending_human_approval", "case_status": case.status.value}
+
+    return {"ok": True, "reason": "state_valid", "case_status": case.status.value}

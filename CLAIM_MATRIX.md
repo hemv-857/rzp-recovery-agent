@@ -58,6 +58,12 @@ Every public claim backed to a file, test, or run command.
 | **CUSUM change-point detector** | `app/cusum.py:CUSUMDetector` — Page's CUSUM for success-rate shifts. Mirrors soumyadip-giri. |
 | **Multi-armed bandit channel selection** | `app/bandit.py:ChannelBandit` — Thompson Sampling across WhatsApp/SMS/Email/Voice. Mirrors soumyadip-giri. |
 | **Late-auth failure class** | `app/models.py:FailureClass.LATE_AUTH` + `app/classifier.py` + `app/selector.py` — authorized but not captured. Mirrors srishti-1935. |
+| **Uplift model** | `app/uplift.py:uplift()` — P(recovery\|A) - P(recovery\|no_action). Mirrors recoup/reclaim. |
+| **Intervention budget** | `app/policy.py:InterventionBudget` — shared cap, atomic deduction, per-channel. Mirrors recoup. |
+| **TOCTOU revalidation** | `app/policy.py:revalidate()` — re-check case state before execution. Mirrors recoup. |
+| **Incident log** | `app/incidents.py:IncidentLog` — 7 documented failures with root causes and fixes. Mirrors recoup/reclaim. |
+| **Adversarial LLM test** | `app/adversarial.py:run_adversarial_test()` — corrupt model cannot violate compliance. Mirrors recoup. |
+| **Combined safety report** | `app/main.py:/security/report` — threat model + adversarial + audit chain in one endpoint. |
 
 ## How to reproduce
 

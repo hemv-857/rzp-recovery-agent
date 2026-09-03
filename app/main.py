@@ -17,10 +17,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent import ingest_failure, mark_recovered, plan_and_schedule, write_off
+from .adversarial import run_adversarial_test
 from .audit_chain import get_audit_chain
 from .bandit import ChannelBandit
 from .cusum import CUSUMDetector
 from .executor import ChannelAdapter, VoiceProvider, execute_action
+from .incidents import get_incident_log
 from .measure import build_report, fmt_rupees
 from .models import (
     ActionType,
@@ -35,6 +37,8 @@ from .ratelimit import RateLimiter, limit_from_env
 from .razorpay_client import client
 from .recovery_model import get_model
 from .selector import _contact_ladder
+from .uplift import uplift
+from .policy import get_budget, revalidate
 
 app = FastAPI(
     title="Razorpay Revenue Recovery Agent",
@@ -1367,5 +1371,165 @@ def late_auth_detail(case_id: str) -> dict[str, Any]:
         "action": (
             "retry_charge (authorized, just needs capture)" if is_late_auth
             else "follow standard failure-class flow"
+        ),
+    }
+
+
+# --- Uplift Model (recoup/reclaim pattern) ---
+@app.get("/cases/{case_id}/uplift", tags=["cases"])
+def case_uplift(case_id: str) -> dict[str, Any]:
+    """Compute incremental uplift for a case's best action.
+    
+    Mirrors recoup's uplift(A) = P(recovery|A) - P(recovery|no_action).
+    """
+    store = _store()
+    case = store.get_case(case_id)
+    if not case:
+        raise HTTPException(404, "case not found")
+    
+    cfg = _cfg()
+    contact_n = len(case.attempt_times)
+    
+    # Evaluate all candidate actions
+    candidates = [
+        ActionType.RETRY_PAYMENT_LINK,
+        ActionType.RETRY_CHARGE,
+        ActionType.NUDGE_WHATSAPP,
+        ActionType.NUDGE_SMS,
+        ActionType.NUDGE_EMAIL,
+        ActionType.NUDGE_VOICE,
+        ActionType.ESCALATE_HUMAN,
+    ]
+    
+    results = []
+    for act in candidates:
+        u = uplift(case, act, contact_n, FIXED_NOW.isoformat(), cfg)
+        results.append({"action": act.value, **u})
+    
+    results.sort(key=lambda x: -x["incremental_ev_paise"])
+    best = results[0] if results else None
+    
+    return {
+        "case_id": case_id,
+        "failure_class": case.failure_class.value,
+        "amount_paise": case.amount,
+        "best_action": best,
+        "all_actions": results,
+    }
+
+
+FIXED_NOW = datetime.now(timezone.utc)
+
+
+# --- Intervention Budget (recoup pattern) ---
+@app.get("/budget", tags=["reporting"])
+def budget_status() -> dict[str, Any]:
+    """Shared intervention budget status."""
+    return get_budget().state()
+
+
+@app.post("/budget/reset", tags=["reporting"])
+def budget_reset(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Reset the intervention budget."""
+    from .policy import InterventionBudget
+    p = payload or {}
+    new_budget = InterventionBudget(
+        total=p.get("total", 500),
+        remaining=p.get("total", 500),
+    )
+    # Replace singleton
+    import app.policy as policy_mod
+    policy_mod._budget = new_budget
+    return new_budget.state()
+
+
+@app.post("/budget/check", tags=["reporting"])
+def budget_check(payload: dict[str, Any]) -> dict[str, Any]:
+    """Check if an action fits within the budget."""
+    channel = payload.get("channel", "email")
+    amount = payload.get("amount", 1)
+    budget = get_budget()
+    return {
+        "channel": channel,
+        "amount": amount,
+        "can_spend": budget.can_spend(channel, amount),
+        **budget.state(),
+    }
+
+
+# --- TOCTOU Revalidation (recoup pattern) ---
+@app.post("/cases/{case_id}/revalidate", tags=["cases"])
+def toctou_revalidate(case_id: str) -> dict[str, Any]:
+    """Re-check case state right before execution (TOCTOU guard).
+    
+    Mirrors recoup's TOCTOU revalidation: catches opt-outs, recoveries,
+    or state changes between planning and execution.
+    """
+    store = _store()
+    return revalidate(case_id, store, "revalidate")
+
+
+# --- Incident Log (recoup/reclaim pattern) ---
+@app.get("/incidents", tags=["reporting"])
+def incident_list() -> dict[str, Any]:
+    """All documented incidents with root causes and fixes."""
+    log = get_incident_log()
+    return {"incidents": log.all(), **log.summary()}
+
+
+@app.get("/incidents/{incident_id}", tags=["reporting"])
+def incident_detail(incident_id: str) -> dict[str, Any]:
+    """Single incident detail."""
+    log = get_incident_log()
+    inc = log.get(incident_id)
+    if not inc:
+        raise HTTPException(404, "incident not found")
+    return {
+        "id": inc.id,
+        "title": inc.title,
+        "severity": inc.severity,
+        "description": inc.description,
+        "root_cause": inc.root_cause,
+        "fix": inc.fix,
+        "status": inc.status,
+        "detected_at": inc.detected_at,
+        "resolved_at": inc.resolved_at,
+    }
+
+
+# --- Adversarial LLM Test (recoup pattern) ---
+@app.post("/security/adversarial-test", tags=["reporting"])
+def adversarial_test() -> dict[str, Any]:
+    """Run adversarial LLM through policy gate — proves corrupt model can't violate compliance.
+    
+    Mirrors recoup's adversarial test: a deliberately malicious LLM proposes
+    voice calls at 3am, charges to opted-out customers, retries stolen cards.
+    The guardrail blocks every one.
+    """
+    return run_adversarial_test()
+
+
+# --- Combined Safety Report (recoup pattern) ---
+@app.get("/security/report", tags=["reporting"])
+def safety_report() -> dict[str, Any]:
+    """Combined safety posture: threat model + adversarial test + audit chain."""
+    from .audit_chain import get_audit_chain as chain
+    
+    tm = threat_model()
+    adv = run_adversarial_test()
+    chain_links = chain()
+    valid, broken_idx = _store().verify_audit_chain()
+    
+    return {
+        "threat_model": tm,
+        "adversarial_test": adv,
+        "audit_chain": {
+            "valid": valid,
+            "broken_at_index": broken_idx,
+            "total_links": len(chain_links),
+        },
+        "overall_status": (
+            "PASS" if tm["mitigated"] == tm["total"] and adv["pass"] and valid
+            else "REVIEW_NEEDED"
         ),
     }
