@@ -1,5 +1,5 @@
 {
-  "outputDirectory": "public",
+  "outputDirectory": ".",
   "framework": null,
   "installCommand": "echo done",
   "buildCommand": "echo done",
