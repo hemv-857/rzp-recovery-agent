@@ -480,6 +480,22 @@ def report() -> dict[str, Any]:
     return build_report(store.all_cases(), store.actions_rows(), _cfg())
 
 
+@app.get("/report/baseline", tags=["reporting"])
+def report_baseline() -> dict[str, Any]:
+    """Pre-computed baseline report from report.json (survives live batch runs)."""
+    import json as _json
+    rp = Path("report.json")
+    if rp.exists():
+        try:
+            data = _json.loads(rp.read_text())
+            return data.get("report", data)
+        except Exception:
+            pass
+    # Fallback: compute from current store
+    store = _store()
+    return build_report(store.all_cases(), store.actions_rows(), _cfg())
+
+
 @app.get(
     "/calculator",
     tags=["tools"],
