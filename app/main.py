@@ -95,6 +95,15 @@ _bandit = ChannelBandit()
 # CUSUM degradation detector — mirrors soumyadip-giri's CUSUM/EWMA
 _cusum = CUSUMDetector()
 
+
+def _channel_from_action(action_type: str) -> str:
+    """Extract channel name from action_type like 'nudge_whatsapp'."""
+    for ch in ("whatsapp", "sms", "email", "voice", "retry"):
+        if ch in action_type:
+            return ch
+    return "other"
+
+
 # Human approval queue — mirrors Sparsh11Ranjan's >₹10k human gate
 _APPROVAL_THRESHOLD_PAISE = 1_000_000  # ₹10,000
 
@@ -650,7 +659,7 @@ async def batch_run_stream(
         for a in actions:
             if a.get("status") == "executed":
                 atype = a.get("action_type", "")
-                ch = "whatsapp" if "whatsapp" in atype else "sms" if "sms" in atype else "email" if "email" in atype else "voice" if "voice" in atype else "retry" if "retry" in atype else "other"
+                ch = _channel_from_action(atype)
                 recovered = float(a.get("recovered_amount", 0) or 0) > 0
                 _bandit.update(ch, 1.0 if recovered else 0.0)
                 get_budget().spend(ch)
@@ -1639,7 +1648,7 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
         for a in actions:
             if a.get("status") == "executed":
                 atype = a.get("action_type", "")
-                ch = "whatsapp" if "whatsapp" in atype else "sms" if "sms" in atype else "email" if "email" in atype else "voice" if "voice" in atype else "retry" if "retry" in atype else "other"
+                ch = _channel_from_action(atype)
                 recovered = float(a.get("recovered_amount", 0) or 0) > 0
                 _bandit.update(ch, 1.0 if recovered else 0.0)
                 get_budget().spend(ch)
