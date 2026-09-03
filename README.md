@@ -47,12 +47,12 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
 
 | metric | value |
 |---|---|
-| amount at risk | ₹2.00 Cr across 2,000 cases |
+| amount at risk | ₹199.58 Cr across 2,000 cases |
 | recovery rate | **70.6% treatment vs 20.8% control** |
 | naive retry baseline | ~38% (single dumb retry, no strategy) |
 | incremental lift | **+49.8 pp**, 95% CI [+45.8, +53.6] (bootstrap) |
-| incremental money recovered | **₹67.7 L** |
-| promises-to-pay | 279 captured via inbound replies, 59% keep rate, ₹18.8 L recovered through them |
+| incremental money recovered | **₹67.72 Cr** |
+| promises-to-pay | 279 captured via inbound replies, 59% keep rate, ₹18.83 Cr recovered through them |
 | Hinglish voice calls | high-value receivables get a TTS call + link-by-SMS follow-through |
 | human escalations (compliant exit path) | audit-logged routing to finance ops when ladders exhaust |
 | redundant-contact share (would have paid anyway) | 30% — reported honestly |
