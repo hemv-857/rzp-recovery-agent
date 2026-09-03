@@ -68,6 +68,15 @@ class Store:
         self.conn.execute("PRAGMA journal_mode=WAL")       # concurrent webhook readers/writes
         self.conn.execute("PRAGMA busy_timeout=5000")
         self.conn.executescript(_SCHEMA)
+        # Migrate: add chain columns if missing (old recovery.db)
+        for col in ("chain_hash", "prev_hash", "chain_index"):
+            try:
+                self.conn.execute(f"SELECT {col} FROM audit LIMIT 1")
+            except sqlite3.OperationalError:
+                if col == "chain_index":
+                    self.conn.execute("ALTER TABLE audit ADD COLUMN chain_index INTEGER")
+                else:
+                    self.conn.execute(f"ALTER TABLE audit ADD COLUMN {col} TEXT")
         self.conn.commit()
 
     # ---- cases -------------------------------------------------------

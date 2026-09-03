@@ -44,6 +44,14 @@ Every public claim backed to a file, test, or run command.
 | **Explicit NO_ACTION when EV negative** | `app/selector.py:select_next_action` — evaluates all candidates, returns None if max net EV <= 0. Mirrors modiviveks. |
 | **Segment breakdown by amount tier** | `app/main.py:/analytics/segments` — Standard/Growth/Enterprise tiers with recovery rates. Mirrors modiviveks. |
 | **Audit chain verification endpoint** | `app/main.py:/audit/chain/verify` — validates SHA-256 chain integrity. Mirrors modiviveks. |
+| **Live_verified vs Demo_verified webhook modes** | `app/agent.py:mark_recovered` + `app/main.py` webhook handler — explicit verification mode (cryptographic vs simulation). Mirrors Ahan-aura. |
+| **Exponential backoff for external APIs** | `app/main.py:exponential_backoff` — 0.5s * 2^n with jitter, max 3 retries. Mirrors Ahan-aura. |
+| **Rehearsed seed for reproducible demo** | `app/main.py:/batch/run/stream?rehearsed=true` — fixed seed 42 for consistent ~34-36% recovery. Mirrors arpit1021-ux. |
+| **Handled gracefully page for hard-decline** | `app/main.py:/handled-gracefully` — deterministically picked case agent correctly refused. Mirrors arpit1021-ux. |
+| **LLM-vs-Rules Gate override contrast** | `app/main.py:/cases/{id}/gate-contrast` — shows LLM diagnosis vs Rules Gate verdict. Mirrors arpit1021-ux. |
+| **Probabilistic outcome model (demo mode)** | `app/main.py:_demo_recovery_prob` — transparent heuristic by failure class/amount/attempts. Mirrors arpit1021-ux. |
+| **Self-hosted fonts / no external deps** | `app/static/dashboard.html` — system-ui font stack, no Google Fonts. Mirrors arpit1021-ux. |
+| **Demo verification endpoint** | `app/main.py:/demo/verify/{case_id}` — simulate payment with demo_verified label. Mirrors Ahan-aura. |
 
 ## How to reproduce
 

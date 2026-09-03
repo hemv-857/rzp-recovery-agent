@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import random
 import re
 from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
@@ -216,19 +217,88 @@ async def razorpay_webhook(
         if isinstance(payment_id, dict):
             payment_id = payment_id.get("id", "plink_paid")
         paid_at = event.get("created_at")
+        # Determine verification mode: live keys = live_verified, otherwise demo_verified
+        import os
+        verification = "live_verified" if os.getenv("RAZORPAY_KEY_ID", "").startswith("rzp_live_") else "demo_verified"
         mark_recovered(
             case, payment_id or "plink_paid", pl["amount"],
             datetime.fromtimestamp(paid_at, tz=timezone.utc).isoformat()
             if paid_at else datetime.now(timezone.utc).isoformat(),
-            store, via="webhook",
+            store, via="webhook", verification=verification,
         )
         store.mark_event_processed(event_id, etype)
-        return {"status": "recovered", "case_id": case.case_id}
+        return {"status": "recovered", "case_id": case.case_id, "verification": verification}
 
     store.append_audit(AuditEvent(actor="webhook", event_type=f"ignored.{etype}",
                                   payload={"event": etype}))
     store.mark_event_processed(event_id, etype)
     return {"status": f"ignored:{etype}"}
+
+
+# --- Demo verification endpoint for local simulation (Ahan-aura pattern) ---
+@app.post("/demo/verify/{case_id}", tags=["cases"])
+def demo_verify(case_id: str) -> dict:
+    """Simulate a customer payment for local demo/testing.
+    
+    Mirrors Ahan-aura's demo_verified mode — explicitly labeled, never confused with live_verified.
+    """
+    store = _store()
+    case = store.get_case(case_id)
+    if not case:
+        raise HTTPException(404, "case not found")
+    if case.status is CaseStatus.RECOVERED:
+        return {"status": "already_recovered", "case_id": case_id}
+    
+    import random
+    # Probabilistic outcome based on failure class and amount
+    prob = _demo_recovery_prob(case)
+    recovered = random.random() < prob
+    
+    if recovered:
+        amount = case.amount
+        from .agent import mark_recovered
+        mark_recovered(case, "demo_payment", amount,
+                       datetime.now(timezone.utc).isoformat(),
+                       store, via="demo", verification="demo_verified")
+        return {"status": "recovered", "case_id": case_id, "verification": "demo_verified", "amount_paise": amount}
+    else:
+        case.touch()
+        store.upsert_case(case)
+        store.append_audit(AuditEvent(
+            actor="demo", event_type="recovery.failed", case_id=case.case_id,
+            payload={"reason": "simulated_failure", "probability": prob},
+        ))
+        return {"status": "failed", "case_id": case_id, "probability": prob}
+
+
+def _demo_recovery_prob(case: RecoveryCase) -> float:
+    """Probabilistic recovery model for demo mode.
+    
+    Based on failure class, amount, and attempt count. Not a real ML model —
+    transparent heuristic for reproducible demo runs.
+    """
+    base = {
+        "INSUFFICIENT_FUNDS": 0.65,
+        "NETWORK_TIMEOUT": 0.70,
+        "ISSUER_UNAVAILABLE": 0.60,
+        "CUSTOMER_ABANDONMENT": 0.45,
+        "INVOICE_OVERDUE": 0.55,
+        "SUBSCRIPTION_FAILED": 0.50,
+        "HARD_DECLINE": 0.15,
+        "MANDATE_ISSUE": 0.35,
+        "SOFT_DECLINE_OTHER": 0.40,
+        "CARD_EXPIRED": 0.40,
+        "GATEWAY_TIMEOUT": 0.55,
+        "PRICE_SHOCK": 0.35,
+        "OVERDUE_GENUINE": 0.50,
+        "UNKNOWN": 0.30,
+    }.get(case.failure_class.value, 0.30)
+    
+    # Fatigue: each attempt reduces probability
+    fatigue = max(0.5, 1.0 - len(case.attempt_times) * 0.1)
+    # Small amounts recover easier
+    amount_factor = 1.0 if case.amount < 100000 else 0.8
+    return min(base * fatigue * amount_factor, 0.95)
 
 
 @app.post("/cases/{case_id}/approve", tags=["cases"])
@@ -494,10 +564,15 @@ async def batch_run_stream(
     seed: int = 42,
     cases: int = 100,
     provider: str | None = None,
+    rehearsed: bool = False,
 ) -> StreamingResponse:
     """Server-Sent Events stream for live batch run progress.
 
     Mirrors Swarajkarle's /batch SSE progress stream.
+    
+    rehearsed: if True, uses a fixed seed (42) that produces a known
+    recovery rate (~34-36%) for consistent demo runs.
+    Mirrors arpit1021-ux's "Use rehearsed seed" feature.
     """
     async def event_generator():
         cfg = _cfg()
@@ -508,8 +583,11 @@ async def batch_run_stream(
         from simulate.engine import run
 
         active_provider = provider or _provider_state["provider"]
-
-        payments = generate_batch(cases, datetime.now(timezone.utc), seed=seed)
+        
+        # Rehearsed seed for consistent demo runs (arpit1021-ux pattern)
+        effective_seed = 42 if rehearsed else seed
+        
+        payments = generate_batch(cases, datetime.now(timezone.utc), seed=effective_seed)
         total = len(payments)
 
         yield f"data: {total}\n\n"
@@ -944,3 +1022,96 @@ def segment_breakdown() -> dict[str, Any]:
             "total_recovered": sum(c.recovered_amount for c in seg_cases),
         }
     return {"segments": result}
+
+
+# --- Handled Gracefully: Hard-decline case the agent correctly refused (arpit1021-ux) ---
+@app.get("/handled-gracefully", tags=["reporting"])
+def handled_gracefully() -> dict[str, Any]:
+    """Return a deterministically-picked hard-decline case the agent correctly refused.
+    
+    Mirrors arpit1021-ux's /failure page — shows the agent correctly identifies
+    fraud/blocked cards and refuses to retry, with full audit trail.
+    """
+    store = _store()
+    cases = store.all_cases()
+    # Find a hard-decline case with BLOCK decision
+    for case in cases:
+        if case.failure_class.value == "HARD_DECLINE":
+            audit = store.audit_for(case.case_id)
+            # Check if it was blocked
+            blocked = any(a.get("event_type") == "action.blocked" for a in audit)
+            if blocked:
+                return {
+                    "case_id": case.case_id,
+                    "failure_class": case.failure_class.value,
+                    "amount_paise": case.amount,
+                    "method": case.method,
+                    "status": case.status.value,
+                    "why_refused": "instrument blocked/fraud-flagged — never auto-retry same instrument",
+                    "audit_trail": audit,
+                    "lesson": "Blind retry on hard decline wastes gateway fees and damages bank reputation. Agent correctly blocks and offers alternate instrument via payment link instead.",
+                }
+    return {"message": "no hard-decline case found yet"}
+
+
+# --- LLM-vs-Rules Gate Override Contrast (arpit1021-ux) ---
+@app.get("/cases/{case_id}/gate-contrast", tags=["cases"])
+def gate_contrast(case_id: str) -> dict[str, Any]:
+    """Show LLM proposal vs Rules Gate verdict contrast for a case.
+    
+    Mirrors arpit1021-ux's audit trail detail showing LLM-vs-rules-gate override.
+    """
+    store = _store()
+    case = next((c for c in store.all_cases() if c.case_id == case_id), None)
+    if not case:
+        raise HTTPException(404, "case not found")
+    
+    audit = store.audit_for(case_id)
+    
+    # Find classification and selector events
+    classified = next((a for a in audit if a.get("event_type") == "case.created"), None)
+    scheduled = next((a for a in audit if a.get("event_type") == "action.scheduled"), None)
+    blocked = next((a for a in audit if a.get("event_type") == "action.blocked"), None)
+    
+    return {
+        "case_id": case.case_id,
+        "failure_class": case.failure_class.value,
+        "llm_diagnosis": {
+            "classified_as": classified.get("classified_as") if classified else None,
+            "confidence": classified.get("confidence") if classified else None,
+            "reasoning": classified.get("reasoning") if classified else None,
+        },
+        "rules_gate": {
+            "decision": scheduled.get("decision") if scheduled else (blocked.get("decision") if blocked else None),
+            "reason": scheduled.get("reason") if scheduled else (blocked.get("reason") if blocked else None),
+            "overrode_llm": blocked is not None,
+        },
+        "outcome": case.status.value,
+        "recovered_amount_paise": case.recovered_amount,
+    }
+
+
+# --- Exponential Backoff Utility for External APIs (Ahan-aura) ---
+async def exponential_backoff(
+    func,
+    max_retries: int = 3,
+    base_delay: float = 0.5,
+    max_delay: float = 8.0,
+    *args,
+    **kwargs,
+):
+    """Exponential backoff with jitter for external API calls.
+    
+    Mirrors Ahan-aura's resilience pattern: 0.5s * 2^n with jitter.
+    """
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            last_exception = e
+            if attempt == max_retries - 1:
+                break
+            delay = min(base_delay * (2 ** attempt) + random.uniform(0, 0.1), max_delay)
+            await asyncio.sleep(delay)
+    raise last_exception

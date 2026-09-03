@@ -125,10 +125,16 @@ def plan_and_schedule(
 
 
 def mark_recovered(
-    case: RecoveryCase, payment_id: str, amount: int, at: str, store, via: str
+    case: RecoveryCase, payment_id: str, amount: int, at: str, store, via: str,
+    verification: str = "live_verified"
 ) -> RecoveryCase:
+    """Mark a case as recovered with explicit verification mode.
+    
+    verification: "live_verified" (cryptographic webhook) | "demo_verified" (local simulation)
+    Mirrors Ahan-aura's strict separation of dispatched vs confirmed collections.
+    """
     if case.status is CaseStatus.RECOVERED:
-        return case                      # idempotent: duplicate webhooks are normal
+        return case
     case.status = CaseStatus.RECOVERED
     case.recovered_payment_id = payment_id
     case.recovered_amount = amount
@@ -139,7 +145,7 @@ def mark_recovered(
     store.append_audit(AuditEvent(
         actor="webhook" if via == "webhook" else "world",
         event_type="recovery.confirmed", case_id=case.case_id,
-        payload={"recovered_amount_paise": amount, "payment_id": payment_id, "via": via},
+        payload={"recovered_amount_paise": amount, "payment_id": payment_id, "via": via, "verification": verification},
     ))
     return case
 
