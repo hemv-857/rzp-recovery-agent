@@ -1611,17 +1611,14 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
 
         await websocket.send_json({"type": "start", "total": total, "seed": seed})
 
-        # Stream per-case progress
-        for i, pmt in enumerate(payments):
-            await websocket.send_json({
-                "type": "progress",
-                "current": i + 1,
-                "total": total,
-                "payment_id": pmt.payment_id,
-            })
-            # Small delay so the dashboard can render
-            if (i + 1) % 50 == 0:
-                await asyncio.sleep(0.01)
+        # Stream per-case progress (throttle: every 10th case + last)
+        for i in range(total):
+            if (i + 1) % 10 == 0 or i + 1 == total:
+                await websocket.send_json({
+                    "type": "progress",
+                    "current": i + 1,
+                    "total": total,
+                })
 
         # Run the full simulation
         run(payments, cfg, store)
@@ -1629,18 +1626,7 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
 
         await websocket.send_json({
             "type": "done",
-            "report": {
-                "cases": rep["batch"]["cases"],
-                "treatment_n": rep["batch"]["treatment_n"],
-                "control_n": rep["batch"]["control_n"],
-                "amount_at_risk": rep["batch"]["amount_at_risk_paise"],
-                "recovery_rate_treatment": rep["headline"]["recovery_rate_treatment"],
-                "recovery_rate_control": rep["headline"]["recovery_rate_control"],
-                "incremental_pp": rep["headline"]["incremental_recovery_pp"],
-                "incremental_money": rep["headline"]["incremental_money_paise"],
-                "opt_outs": rep["cost"]["opt_outs"],
-                "contacts": rep["cost"]["contacts_executed"],
-            },
+            "report": rep,
         })
     except WebSocketDisconnect:
         pass

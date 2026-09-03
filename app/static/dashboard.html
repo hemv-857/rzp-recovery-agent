@@ -142,7 +142,7 @@
                     </div>}
                     <button className="bs" onClick={onRefresh} style={{padding:"6px 12px",fontSize:11}} disabled={running}>↻ Refresh</button>
                     <button className="bp" onClick={onRunBatch} style={{padding:"6px 14px",fontSize:11}} disabled={running}>{running?"Running…":"Run Batch"}</button>
-                    <span className="badge">{cases} cases · {treatment}T/{control}C</span>
+                    <span className="badge">{cases||"—"} cases · {treatment||"—"}T/{control||"—"}C</span>
                 </div>
             </div>
         );

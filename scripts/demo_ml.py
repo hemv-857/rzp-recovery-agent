@@ -68,6 +68,12 @@ def main() -> None:
                     except (ValueError, KeyError):
                         continue
 
+        if not cases_with_actions:
+            print("  No executed actions found — skipping SHAP demo")
+            store.close()
+            Path("demo_ml.db").unlink(missing_ok=True)
+            return
+
         sample = random.sample(cases_with_actions, min(5, len(cases_with_actions)))
         for case, action_type in sample:
             pred = model.predict(case, action_type, 0, datetime.now(timezone.utc).isoformat(), cfg)

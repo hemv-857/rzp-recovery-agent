@@ -78,7 +78,7 @@ def main() -> None:
         print("  greedy wins — knapsack discretization error (shouldn't happen)")
 
     # Show the textbook example
-    print("\n--- Textbook proof (5 items, capacity 10) ---")
+    print("\n--- Textbook proof (5 items, capacity 6) ---")
     textbook = [
         PendingCase("A", 6000, 2.0),   # value=60, weight=2
         PendingCase("B", 10000, 2.1),  # value=100, weight=2.1
@@ -86,8 +86,8 @@ def main() -> None:
         PendingCase("D", 8000, 1.5),   # value=80, weight=1.5
         PendingCase("E", 4000, 1.0),   # value=40, weight=1
     ]
-    ks_t, ks_ev_t = knapsack_select(textbook, 10.0)
-    gr_t, gr_ev_t = greedy_select(textbook, 10.0)
+    ks_t, ks_ev_t = knapsack_select(textbook, 6.0)
+    gr_t, gr_ev_t = greedy_select(textbook, 6.0)
     print(f"  knapsack: {ks_t} → ₹{ks_ev_t/100:,.0f}")
     print(f"  greedy:   {gr_t} → ₹{gr_ev_t/100:,.0f}")
     print(f"  improvement: +₹{(ks_ev_t - gr_ev_t)/100:,.0f}")

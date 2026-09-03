@@ -63,7 +63,7 @@ def test_greedy_baseline():
 
 
 def test_textbook_instance():
-    """Classic knapsack textbook: greedy scores 30, knapsack scores 48."""
+    """Knapsack should beat greedy when not all items fit (capacity 6, total weight 9.6)."""
     cases = [
         PendingCase("A", 6000, 2.0),
         PendingCase("B", 10000, 2.1),
@@ -71,13 +71,13 @@ def test_textbook_instance():
         PendingCase("D", 8000, 1.5),
         PendingCase("E", 4000, 1.0),
     ]
-    ks_ids, ks_ev = knapsack_select(cases, 10.0)
-    gr_ids, gr_ev = greedy_select(cases, 10.0)
+    ks_ids, ks_ev = knapsack_select(cases, 6.0)
+    gr_ids, gr_ev = greedy_select(cases, 6.0)
     # Knapsack should match or beat greedy
     assert ks_ev >= gr_ev
-    # Both should select at least one case
-    assert len(ks_ids) > 0
-    assert len(gr_ids) > 0
+    # Not all items should fit
+    assert len(ks_ids) < 5
+    assert len(gr_ids) < 5
 
 
 def test_zero_capacity():
