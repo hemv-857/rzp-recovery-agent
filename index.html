@@ -149,10 +149,10 @@
                 <div className="tb-acts">
                     {isLive && <span style={{fontSize:10,letterSpacing:".06em",padding:"4px 10px",borderRadius:"999px",border:"1px solid rgba(59,130,246,0.4)",color:"var(--blu)",fontWeight:600,cursor:"pointer"}} onClick={onDismissLive}>LIVE · click for baseline</span>}
                     {running && <span style={{fontSize:11,color:"var(--blu)",marginRight:8}}>
-                        {progress.current}/{progress.total} cases
+                        {progress.total > 1 ? `${progress.current}/${progress.total} cases` : 'Running…'}
                     </span>}
                     {running && <div style={{width:80,height:4,background:"rgba(255,255,255,0.1)",borderRadius:2,overflow:"hidden",marginRight:8}}>
-                        <div style={{height:"100%",width:(progress.current/progress.total*100)+"%",background:"var(--blu)",borderRadius:2,transition:"width .2s"}}></div>
+                        <div style={{height:"100%",width: progress.total > 1 ? (progress.current/progress.total*100)+"%" : "30%",background:"var(--blu)",borderRadius:2,transition:"width .2s"}}></div>
                     </div>}
                     <button className="bs" onClick={onRefresh} style={{padding:"6px 12px",fontSize:11}} disabled={running}>↻ Refresh</button>
                     <button className="bp" onClick={onRunBatch} style={{padding:"6px 14px",fontSize:11}} disabled={running}>{running?"Running…":"Run Batch"}</button>

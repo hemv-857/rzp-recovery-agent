@@ -1611,16 +1611,7 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
 
         await websocket.send_json({"type": "start", "total": total, "seed": seed})
 
-        # Stream per-case progress (throttle: every 10th case + last)
-        for i in range(total):
-            if (i + 1) % 10 == 0 or i + 1 == total:
-                await websocket.send_json({
-                    "type": "progress",
-                    "current": i + 1,
-                    "total": total,
-                })
-
-        # Run the full simulation
+        # Run the full simulation (fast: ~1-2s for 500 cases)
         run(payments, cfg, store)
         rep = build_report(store.all_cases(), store.actions_rows(), cfg)
 
