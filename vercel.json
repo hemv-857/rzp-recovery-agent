@@ -20,7 +20,6 @@
     { "source": "/docs", "destination": "https://rzp-recovery-agent.onrender.com/docs" },
     { "source": "/openapi.json", "destination": "https://rzp-recovery-agent.onrender.com/openapi.json" },
     { "source": "/ws/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/ws/$1" },
-    { "source": "/audit/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/audit/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/audit/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/audit/$1" }
   ]
 }
