@@ -146,11 +146,11 @@
                     <div><div className="tb-title">Revenue Recovery Agent</div><div className="tb-sub">Razorpay AI Buildathon 2026 — Track 03</div></div>
                 </div>
                 <div className="tb-acts">
-                    {isLive && <span style={{fontSize:10,letterSpacing:".06em",padding:"4px 10px",borderRadius:999px,border:"1px solid rgba(59,130,246,.4)",color:"var(--blu)",fontWeight:600,cursor:"pointer"}} onClick={onDismissLive}>LIVE · click for baseline</span>}
+                    {isLive && <span style={{fontSize:10,letterSpacing:".06em",padding:"4px 10px",borderRadius:999px,border:"1px solid rgba(59,130,246,0.4)",color:"var(--blu)",fontWeight:600,cursor:"pointer"}} onClick={onDismissLive}>LIVE · click for baseline</span>}
                     {running && <span style={{fontSize:11,color:"var(--blu)",marginRight:8}}>
                         {progress.current}/{progress.total} cases
                     </span>}
-                    {running && <div style={{width:80,height:4,background:"rgba(255,255,255,.1)",borderRadius:2,overflow:"hidden",marginRight:8}}>
+                    {running && <div style={{width:80,height:4,background:"rgba(255,255,255,0.1)",borderRadius:2,overflow:"hidden",marginRight:8}}>
                         <div style={{height:"100%",width:(progress.current/progress.total*100)+"%",background:"var(--blu)",borderRadius:2,transition:"width .2s"}}></div>
                     </div>}
                     <button className="bs" onClick={onRefresh} style={{padding:"6px 12px",fontSize:11}} disabled={running}>↻ Refresh</button>
@@ -228,8 +228,8 @@
                     {label:"Control %",data:entries.map(([,d])=>pct(d.control_rate,1)),backgroundColor:"#64748b",borderRadius:4}
                 ]},
                 options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:11}}}},scales:{
-                    x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}},
-                    y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,.04)"}}
+                    x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,0.04)"}},
+                    y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,0.04)"}}
                 }}
             });
             if(charts.current.spend) charts.current.spend.destroy();
@@ -297,7 +297,7 @@
                             <div style={{color:"var(--dim)",fontSize:12,marginBottom:16}}>money recovered that wouldn't have been</div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-                            {[["PROJECTED CONTACTS",result.projected_contacts.toLocaleString("en-IN")],["CONTACT SPEND",fmt(result.projected_contact_spend_paise)],["COST / RECOVERY",fmt(result.cost_per_incremental_recovery_paise)],["ROI MULTIPLE",result.projected_contact_spend_paise>0?(result.incremental_recovery_paise/result.projected_contact_spend_paise).toFixed(0)+"x":"—"]].map(([l,v],i)=><div key={i} style={{background:"rgba(255,255,255,.04)",padding:12,borderRadius:8,textAlign:"center"}}><div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:17,fontWeight:700}}>{v}</div></div>)}
+                            {[["PROJECTED CONTACTS",result.projected_contacts.toLocaleString("en-IN")],["CONTACT SPEND",fmt(result.projected_contact_spend_paise)],["COST / RECOVERY",fmt(result.cost_per_incremental_recovery_paise)],["ROI MULTIPLE",result.projected_contact_spend_paise>0?(result.incremental_recovery_paise/result.projected_contact_spend_paise).toFixed(0)+"x":"—"]].map(([l,v],i)=><div key={i} style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8,textAlign:"center"}}><div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:17,fontWeight:700}}>{v}</div></div>)}
                         </div>
                         <div style={{color:"var(--dim)",fontSize:11,borderTop:"1px solid var(--bdr)",paddingTop:10}}>assumptions: median case {result.assumptions.median_case_amount} · {result.assumptions.cost_per_touch_source}</div>
                         <div className="mb" style={{marginTop:12}}><button className="bs" onClick={()=>setPhase("form")}>Recalculate</button><button className="bs" onClick={onClose}>Close</button></div>
@@ -481,23 +481,23 @@
 
                 {/* ── Security Panel ── */}
                 {security && <div className="card a-fu" style={{marginBottom:20}}>
-                    <div className="card-h"><span className="card-t">🛡 Security Posture</span><span className="badge" style={{borderColor:security.overall_status==="PASS"?"rgba(34,197,94,.4)":"rgba(234,179,8,.4)",color:security.overall_status==="PASS"?"var(--grn)":"var(--yel)"}}>{security.overall_status}</span></div>
+                    <div className="card-h"><span className="card-t">🛡 Security Posture</span><span className="badge" style={{borderColor:security.overall_status==="PASS"?"rgba(34,197,94,0.4)":"rgba(234,179,8,0.4)",color:security.overall_status==="PASS"?"var(--grn)":"var(--yel)"}}>{security.overall_status}</span></div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
-                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:14,borderRadius:10,textAlign:"center"}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Threats Mitigated</div>
                             <div style={{fontSize:22,fontWeight:800,color:"var(--grn)",marginTop:4}}>{security.threat_model?.mitigated}/{security.threat_model?.total}</div>
                         </div>
-                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:14,borderRadius:10,textAlign:"center"}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Adversarial Test</div>
                             <div style={{fontSize:22,fontWeight:800,color:security.adversarial_test?.pass?"var(--grn)":"var(--red)",marginTop:4}}>{security.adversarial_test?.pass?"PASS":"FAIL"}</div>
                         </div>
-                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                        <div style={{background:"rgba(255,255,255,0.04)",padding:14,borderRadius:10,textAlign:"center"}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Audit Chain</div>
                             <div style={{fontSize:22,fontWeight:800,color:security.audit_chain?.valid?"var(--grn)":"var(--red)",marginTop:4}}>{security.audit_chain?.valid?"VALID":"BROKEN"}</div>
                             <div style={{color:"var(--dim)",fontSize:10}}>{security.audit_chain?.total_links} links</div>
                         </div>
                     </div>
-                    {security.adversarial_test && <div style={{background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.15)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--grn)"}}>
+                    {security.adversarial_test && <div style={{background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.15)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--grn)"}}>
                         ✅ {security.adversarial_test.cases_tested} adversarial cases tested · {security.adversarial_test.cases_terminated} terminated by policy · 0 compliance violations
                     </div>}
                 </div>}
@@ -510,18 +510,18 @@
                             <div className="bar-g"><div className="bar-l"><span>Used</span><span>{budget.total-budget.remaining}/{budget.total}</span></div>
                             <div className="bar"><div className="bf t" style={{width:(budget.utilization*100)+"%"}}></div></div></div>
                             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginTop:10}}>
-                                {Object.entries(budget.by_channel||{}).slice(0,6).map(([ch,v])=><div key={ch} style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:6,textAlign:"center"}}><div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>{ch}</div><div style={{fontSize:13,fontWeight:700}}>{v}</div></div>)}
+                                {Object.entries(budget.by_channel||{}).slice(0,6).map(([ch,v])=><div key={ch} style={{background:"rgba(255,255,255,0.04)",padding:6,borderRadius:6,textAlign:"center"}}><div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>{ch}</div><div style={{fontSize:13,fontWeight:700}}>{v}</div></div>)}
                             </div>
                         </div>
                     </div>}
                     {bandit && <div className="card a-fu d2">
                         <div className="card-h"><span className="card-t">🎰 Channel Bandit</span></div>
                         <div style={{padding:"8px 0"}}>
-                            {Object.entries(bandit).map(([ch,v])=><div key={ch} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
+                            {Object.entries(bandit).map(([ch,v])=><div key={ch} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
                                 <span style={{fontSize:12,color:"var(--sec)",textTransform:"capitalize"}}>{ch}</span>
                                 <div style={{display:"flex",gap:12,alignItems:"center"}}>
                                     <span style={{fontSize:11,color:"var(--dim)"}}>{v.pulls} pulls</span>
-                                    <div style={{width:60,height:6,background:"rgba(255,255,255,.06)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:(v.mean_recovery*100)+"%",background:"var(--blu)",borderRadius:3}}></div></div>
+                                    <div style={{width:60,height:6,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:(v.mean_recovery*100)+"%",background:"var(--blu)",borderRadius:3}}></div></div>
                                     <span style={{fontSize:12,fontWeight:600,width:40,textAlign:"right"}}>{(v.mean_recovery*100).toFixed(0)}%</span>
                                 </div>
                             </div>)}
@@ -531,11 +531,11 @@
                         <div className="card-h"><span className="card-t">📈 CUSUM Detector</span></div>
                         <div style={{padding:"8px 0"}}>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                                <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:8,textAlign:"center"}}>
+                                <div style={{background:"rgba(255,255,255,0.04)",padding:10,borderRadius:8,textAlign:"center"}}>
                                     <div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>Positive</div>
                                     <div style={{fontSize:18,fontWeight:700}}>{cusum.positive_cusum}</div>
                                 </div>
-                                <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:8,textAlign:"center"}}>
+                                <div style={{background:"rgba(255,255,255,0.04)",padding:10,borderRadius:8,textAlign:"center"}}>
                                     <div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>Negative</div>
                                     <div style={{fontSize:18,fontWeight:700}}>{cusum.negative_cusum}</div>
                                 </div>
@@ -548,9 +548,9 @@
                 {/* ── Incidents + Approval Queue Row ── */}
                 <div className="grid m2" style={{marginBottom:20}}>
                     {incidents && <div className="card a-fu d1">
-                        <div className="card-h"><span className="card-t">🔥 Incident Log</span><span className="badge" style={{borderColor:"rgba(34,197,94,.4)",color:"var(--grn)"}}>{incidents.resolved}/{incidents.total} resolved</span></div>
+                        <div className="card-h"><span className="card-t">🔥 Incident Log</span><span className="badge" style={{borderColor:"rgba(34,197,94,0.4)",color:"var(--grn)"}}>{incidents.resolved}/{incidents.total} resolved</span></div>
                         <div style={{maxHeight:200,overflowY:"auto"}}>
-                            {(incidents.incidents||[]).slice(0,5).map(inc=><div key={inc.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:12}}>
+                            {(incidents.incidents||[]).slice(0,5).map(inc=><div key={inc.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",fontSize:12}}>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                     <span style={{fontWeight:600}}>{inc.id}: {inc.title}</span>
                                     <span style={{color:inc.severity==="high"?"var(--red)":inc.severity==="medium"?"var(--yel)":"var(--dim)",fontSize:10,textTransform:"uppercase"}}>{inc.severity}</span>
@@ -560,10 +560,10 @@
                         </div>
                     </div>}
                     {approval && <div className="card a-fu d2">
-                        <div className="card-h"><span className="card-t">✋ Approval Queue</span><span className="badge" style={{borderColor:approval.count>0?"rgba(234,179,8,.4)":"rgba(34,197,94,.4)",color:approval.count>0?"var(--yel)":"var(--grn)"}}>{approval.count} pending</span></div>
+                        <div className="card-h"><span className="card-t">✋ Approval Queue</span><span className="badge" style={{borderColor:approval.count>0?"rgba(234,179,8,0.4)":"rgba(34,197,94,0.4)",color:approval.count>0?"var(--yel)":"var(--grn)"}}>{approval.count} pending</span></div>
                         <div style={{padding:"8px 0"}}>
                             {approval.count===0?<div style={{color:"var(--dim)",fontSize:12,textAlign:"center",padding:16}}>No cases pending approval</div>
-                            :(approval.queue||[]).slice(0,5).map(c=><div key={c.case_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:12}}>
+                            :(approval.queue||[]).slice(0,5).map(c=><div key={c.case_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",fontSize:12}}>
                                 <div><span style={{fontWeight:600}}>{c.customer}</span><span style={{color:"var(--dim)",marginLeft:8}}>{c.failure_class}</span></div>
                                 <span style={{fontWeight:700}}>{fmt(c.amount_paise)}</span>
                             </div>)}

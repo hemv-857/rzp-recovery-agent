@@ -4,7 +4,7 @@
   "installCommand": "echo done",
   "buildCommand": "echo done",
   "rewrites": [
-    { "source": "/static/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/static/$1" },
+    { "source": "/static/(.*)", "destination": "/static/$1" },
     { "source": "/report/baseline", "destination": "https://rzp-recovery-agent.onrender.com/report/baseline" },
     { "source": "/report", "destination": "https://rzp-recovery-agent.onrender.com/report" },
     { "source": "/cases/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/cases/$1" },
