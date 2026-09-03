@@ -78,6 +78,21 @@ class Store:
                 else:
                     self.conn.execute(f"ALTER TABLE audit ADD COLUMN {col} TEXT")
         self.conn.commit()
+        self._batch = False
+
+    def begin_batch(self) -> None:
+        self._batch = True
+        self._batch_count = 0
+
+    def end_batch(self) -> None:
+        self._batch = False
+        self.conn.commit()
+
+    def _maybe_commit(self) -> None:
+        if self._batch:
+            self._batch_count += 1
+            if self._batch_count % 500 == 0:
+                self.conn.commit()
 
     # ---- cases -------------------------------------------------------
     def upsert_case(self, case: RecoveryCase) -> None:
@@ -92,7 +107,10 @@ class Store:
                 case.recovered_amount, _dump(case), case.created_at,
             ),
         )
-        self.conn.commit()
+        if not self._batch:
+            self.conn.commit()
+        else:
+            self._maybe_commit()
 
     def get_case(self, case_id: str) -> RecoveryCase | None:
         row = self.conn.execute(
@@ -150,13 +168,22 @@ class Store:
                 action.cost_paise, _dump(action),
             ),
         )
-        self.conn.commit()
+        if not self._batch:
+            self.conn.commit()
+        else:
+            self._maybe_commit()
 
     def scheduled_actions(self) -> list[Intervention]:
         rows = self.conn.execute(
             "SELECT data FROM actions WHERE status='scheduled' ORDER BY scheduled_at"
         ).fetchall()
         return [Intervention.model_validate_json(r["data"]) for r in rows]
+
+    def get_action_by_id(self, action_id: str) -> Intervention | None:
+        row = self.conn.execute(
+            "SELECT data FROM actions WHERE action_id=?", (action_id,)
+        ).fetchone()
+        return Intervention.model_validate_json(row["data"]) if row else None
 
     def due_actions(self, now_iso: str) -> list[Intervention]:
         rows = self.conn.execute(
@@ -190,9 +217,12 @@ class Store:
     def supersede_scheduled(self, case_id: str) -> None:
         self.conn.execute(
             "UPDATE actions SET status='superseded', data=json_set(data,'$.status','superseded') "
-            "WHERE case_id=? AND status='scheduled'", (case_id,),
+             "WHERE case_id=? AND status='scheduled'", (case_id,),
         )
-        self.conn.commit()
+        if not self._batch:
+            self.conn.commit()
+        else:
+            self._maybe_commit()
 
     # ---- audit -------------------------------------------------------
     def append_audit(self, event: AuditEvent) -> None:
@@ -205,7 +235,10 @@ class Store:
             (event.event_id, event.ts, event.actor, event.event_type,
              event.case_id, json.dumps(event.payload), link.hash, link.prev_hash, link.index),
         )
-        self.conn.commit()
+        if not self._batch:
+            self.conn.commit()
+        else:
+            self._maybe_commit()
 
     def verify_audit_chain(self) -> tuple[bool, int | None]:
         """Verify the hash chain integrity from database."""

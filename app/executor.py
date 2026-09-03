@@ -111,6 +111,10 @@ def execute_action(
     if gate.decision is Decision.DEFER:
         action.status = ActionStatus.DEFERRED
         action.blocked_reason = f"{gate.reason}; rescheduled"
+        # Mark pre-debit notice as sent so we don't re-defer forever
+        if gate.reason == "rbi_pre_debit_notice_required":
+            case.pre_debit_notice_sent = True
+            store.upsert_case(case)
         store.save_action(action)
         store.append_audit(AuditEvent(
             actor="policy", event_type="action.deferred", case_id=case.case_id,

@@ -42,122 +42,182 @@ def run(payments, cfg: dict, store,
         push(s, "sweep", None)
         s += timedelta(hours=6)
 
+    store.begin_batch()
     processed = 0
-    while heap:
-        ts, _, kind, payload = heapq.heappop(heap)
-        now = datetime.fromtimestamp(ts, tz=timezone.utc)
+    action_visits: dict[str, int] = {}
+    try:
+        while heap:
+            ts, _, kind, payload = heapq.heappop(heap)
+            now = datetime.fromtimestamp(ts, tz=timezone.utc)
 
-        if kind == "case_ingest":
-            fp, g = payload
-            case = ingest_failure(fp, store, cfg, assign_group=lambda gg=g: gg)
-            lat = world.latent_for(case)
-            if lat.organic_at and lat.organic_at <= horizon_end:
-                push(lat.organic_at, "organic", case.case_id)
-            first_action = plan_and_schedule(case, cfg, now, store)
-            if first_action:
-                when = datetime.fromisoformat(first_action.scheduled_at)
-                if when <= horizon_end:
-                    push(when, "action_due", first_action.action_id)
-            processed += 1
-            if progress and processed % 250 == 0:
-                progress(f"ingested {processed}/{len(payments)}")
-
-        elif kind == "action_due":
-            action_id = payload
-            action = next((a for a in store.scheduled_actions()
-                           if a.action_id == action_id), None)
-            if action is None:
-                continue
-            case = store.get_case(action.case_id)
-            if case is None or case.status.value in ("recovered", "written_off"):
-                continue
-            executed, case = execute_action(action, case, cfg, store, channels, now,
-                                            voice=voice)
-
-            if executed.action_type is ActionType.CHECK_PROMISE:
-                # promise broken (still open past due): resume the ladder
-                if case.status.value in ("open", "scheduled"):
-                    fresh = plan_and_schedule(case, cfg, now, store)
-                    if fresh and datetime.fromisoformat(fresh.scheduled_at) <= horizon_end:
-                        push(datetime.fromisoformat(fresh.scheduled_at),
-                             "action_due", fresh.action_id)
-                continue
-
-            if executed.status is ActionStatus.SCHEDULED:      # policy deferred it
-                push(datetime.fromisoformat(executed.scheduled_at),
-                     "action_due", executed.action_id)
-                continue
-            if executed.status is not ActionStatus.EXECUTED:
-                continue
-
-            if executed.action_type is ActionType.ESCALATE_HUMAN:
-                # automated ladder exhausted: case leaves the automated funnel,
-                # recovery may still happen via finance ops (counted honestly as
-                # not-automated-recovered). Audit carries the routing.
-                store.append_audit(AuditEvent(
-                    actor="executor", event_type="case.escalated_human",
-                    case_id=case.case_id, payload={},
-                ))
-                write_off(case, "escalated_to_human_finance_ops", store)
-                continue
-
-            outcome = world.respond_to_contact(case, executed.action_type, now)
-            if outcome is Outcome.RECOVERED:
-                mark_recovered(case, f"pay_rec_{case.case_id[-8:]}", case.amount,
-                               now.isoformat(), store, via="simulated")
-            elif outcome is Outcome.PROMISED:
-                due = world.promise_due(case, now)
-                case.promised_at = now.isoformat()
-                case.promise_due = due.isoformat()
-                case.touch()
-                store.upsert_case(case)
-                store.supersede_scheduled(case.case_id)   # pause ladder while promise active
-                store.append_audit(AuditEvent(
-                    actor="world", event_type="promise.received", case_id=case.case_id,
-                    payload={"due": case.promise_due,
-                             "note": "(inbound reply captured via /inbound/reply in live mode)"},
-                ))
-                check = Intervention(
-                    case_id=case.case_id, action_type=ActionType.CHECK_PROMISE,
-                    scheduled_at=(due + timedelta(hours=6)).isoformat(),
-                    reasoning={"strategy": "promise_to_pay_followup"},
+            if kind == "case_ingest":
+                fp, g = payload
+                case = ingest_failure(
+                    fp, store, cfg, assign_group=lambda gg=g: gg,
                 )
-                store.save_action(check)
-                if datetime.fromisoformat(check.scheduled_at) <= horizon_end:
-                    push(datetime.fromisoformat(check.scheduled_at),
-                         "action_due", check.action_id)
-                if world.keeps_promise(case):
-                    # honoring customers pay before the check fires
-                    pay_at = max(now + timedelta(minutes=30), due - timedelta(hours=2))
-                    if pay_at <= horizon_end:
-                        push(pay_at, "promise_paid", case.case_id)
-            elif outcome is Outcome.OPTED_OUT:
-                write_off(case, "customer_opted_out", store)
-            else:
-                fresh = plan_and_schedule(case, cfg, now, store)
-                if fresh:
-                    when = datetime.fromisoformat(fresh.scheduled_at)
+                lat = world.latent_for(case)
+                if lat.organic_at and lat.organic_at <= horizon_end:
+                    push(lat.organic_at, "organic", case.case_id)
+                first_action = plan_and_schedule(case, cfg, now, store)
+                if first_action:
+                    when = datetime.fromisoformat(first_action.scheduled_at)
                     if when <= horizon_end:
-                        push(when, "action_due", fresh.action_id)
+                        push(when, "action_due", first_action.action_id)
+                processed += 1
+                if progress and processed % 250 == 0:
+                    progress(f"ingested {processed}/{len(payments)}")
 
-        elif kind == "organic":
-            case = store.get_case(payload)
-            if case and case.status.value in ("open", "scheduled"):
-                mark_recovered(case, f"pay_org_{case.case_id[-8:]}", case.amount,
-                               now.isoformat(), store, via="organic")
+            elif kind == "action_due":
+                action_id = payload
+                # Safety: skip if same action fires too many times
+                action_visits[action_id] = action_visits.get(action_id, 0) + 1
+                if action_visits[action_id] > 6:
+                    continue
+                action = store.get_action_by_id(action_id)
+                if action is None:
+                    continue
+                case = store.get_case(action.case_id)
+                if case is None or case.status.value in (
+                    "recovered", "written_off",
+                ):
+                    continue
+                executed, case = execute_action(
+                    action, case, cfg, store, channels, now,
+                    voice=voice,
+                )
 
-        elif kind == "promise_paid":
-            case = store.get_case(payload)
-            if case and case.status.value in ("open", "scheduled"):
-                mark_recovered(case, f"pay_p2p_{case.case_id[-8:]}", case.amount,
-                               now.isoformat(), store, via="promised")
+                if executed.action_type is ActionType.CHECK_PROMISE:
+                    # promise broken (still open past due): resume ladder
+                    if case.status.value in ("open", "scheduled"):
+                        fresh = plan_and_schedule(case, cfg, now, store)
+                        if fresh and datetime.fromisoformat(
+                            fresh.scheduled_at
+                        ) <= horizon_end:
+                            push(
+                                datetime.fromisoformat(fresh.scheduled_at),
+                                "action_due", fresh.action_id,
+                            )
+                    continue
 
-        elif kind == "sweep":
-            for case in store.open_cases():
-                if should_write_off(case, now, cfg):
-                    write_off(case, "final_window_elapsed", store)
+                if executed.status is ActionStatus.SCHEDULED:
+                    # policy deferred it
+                    push(
+                        datetime.fromisoformat(executed.scheduled_at),
+                        "action_due", executed.action_id,
+                    )
+                    continue
+                if executed.status is not ActionStatus.EXECUTED:
+                    continue
 
-    # finalize: anything still unresolved at horizon end is honestly written off
+                if executed.action_type is ActionType.ESCALATE_HUMAN:
+                    store.append_audit(AuditEvent(
+                        actor="executor",
+                        event_type="case.escalated_human",
+                        case_id=case.case_id, payload={},
+                    ))
+                    write_off(
+                        case, "escalated_to_human_finance_ops", store,
+                    )
+                    continue
+
+                outcome = world.respond_to_contact(
+                    case, executed.action_type, now,
+                )
+                if outcome is Outcome.RECOVERED:
+                    mark_recovered(
+                        case, f"pay_rec_{case.case_id[-8:]}",
+                        case.amount, now.isoformat(), store,
+                        via="simulated",
+                    )
+                elif outcome is Outcome.PROMISED:
+                    due = world.promise_due(case, now)
+                    case.promised_at = now.isoformat()
+                    case.promise_due = due.isoformat()
+                    case.touch()
+                    store.upsert_case(case)
+                    store.supersede_scheduled(case.case_id)
+                    store.append_audit(AuditEvent(
+                        actor="world",
+                        event_type="promise.received",
+                        case_id=case.case_id,
+                        payload={
+                            "due": case.promise_due,
+                            "note": (
+                                "(inbound reply captured via"
+                                " /inbound/reply in live mode)"
+                            ),
+                        },
+                    ))
+                    check = Intervention(
+                        case_id=case.case_id,
+                        action_type=ActionType.CHECK_PROMISE,
+                        scheduled_at=(
+                            due + timedelta(hours=6)
+                        ).isoformat(),
+                        reasoning={
+                            "strategy": "promise_to_pay_followup",
+                        },
+                    )
+                    store.save_action(check)
+                    if datetime.fromisoformat(
+                        check.scheduled_at
+                    ) <= horizon_end:
+                        push(
+                            datetime.fromisoformat(check.scheduled_at),
+                            "action_due", check.action_id,
+                        )
+                    if world.keeps_promise(case):
+                        pay_at = max(
+                            now + timedelta(minutes=30),
+                            due - timedelta(hours=2),
+                        )
+                        if pay_at <= horizon_end:
+                            push(
+                                pay_at, "promise_paid",
+                                case.case_id,
+                            )
+                elif outcome is Outcome.OPTED_OUT:
+                    write_off(case, "customer_opted_out", store)
+                else:
+                    fresh = plan_and_schedule(case, cfg, now, store)
+                    if fresh:
+                        when = datetime.fromisoformat(
+                            fresh.scheduled_at
+                        )
+                        if when <= horizon_end:
+                            push(
+                                when, "action_due",
+                                fresh.action_id,
+                            )
+
+            elif kind == "organic":
+                case = store.get_case(payload)
+                if case and case.status.value in ("open", "scheduled"):
+                    mark_recovered(
+                        case, f"pay_org_{case.case_id[-8:]}",
+                        case.amount, now.isoformat(), store,
+                        via="organic",
+                    )
+
+            elif kind == "promise_paid":
+                case = store.get_case(payload)
+                if case and case.status.value in ("open", "scheduled"):
+                    mark_recovered(
+                        case, f"pay_p2p_{case.case_id[-8:]}",
+                        case.amount, now.isoformat(), store,
+                        via="promised",
+                    )
+
+            elif kind == "sweep":
+                for case in store.open_cases():
+                    if should_write_off(case, now, cfg):
+                        write_off(
+                            case, "final_window_elapsed", store,
+                        )
+    finally:
+        store.end_batch()
+
+    # finalize: anything still unresolved at horizon end
     for case in store.open_cases():
         write_off(case, "horizon_end_unresolved", store)
     return world
