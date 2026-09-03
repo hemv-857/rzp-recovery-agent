@@ -5,8 +5,6 @@ Only positive uplift actions are worth executing — this is the core economic s
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from .models import ActionType, FailureClass, RecoveryCase
 from .recovery_model import predict_recovery
 

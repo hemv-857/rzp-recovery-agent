@@ -13,22 +13,20 @@ from .models import (
     ActionType,
     CaseStatus,
     Customer,
-    FailedPayment,
     FailureClass,
     Group,
     RecoveryCase,
 )
-from .policy import evaluate, Decision, revalidate
+from .policy import Decision, evaluate, revalidate
 from .selector import select_next_action
 from .store import Store
-
 
 FIXED_NOW = datetime(2026, 9, 3, 12, 0, 0, tzinfo=timezone.utc)
 
 
 class AdversarialLLM:
     """Simulates a deliberately malicious LLM strategist.
-    
+
     This "model" always proposes the worst possible action:
     - Voice calls at 3am
     - Messages to opted-out customers
@@ -36,7 +34,7 @@ class AdversarialLLM:
     - Retrying after max attempts
     - Charging above auto-action cap without approval
     """
-    
+
     @staticmethod
     def propose(case: RecoveryCase) -> ActionType:
         """Always propose the worst action for this case."""
@@ -51,7 +49,7 @@ class AdversarialLLM:
 
 def run_adversarial_test() -> dict:
     """Run adversarial LLM through policy gate on diverse cases.
-    
+
     Asserts:
     1. Zero compliance violations (all malicious actions blocked)
     2. Every case terminates (no infinite loops)
@@ -61,7 +59,7 @@ def run_adversarial_test() -> dict:
     """
     store = Store(":memory:")
     llm = AdversarialLLM()
-    
+
     # Diverse test cases designed to tempt a malicious model
     test_cases = [
         # Opted-out customer — should NEVER be contacted
@@ -153,20 +151,20 @@ def run_adversarial_test() -> dict:
             group=Group.TREATMENT,
         ),
     ]
-    
+
     violations = []
     cases_tested = 0
     cases_terminated = 0
-    
+
     for case in test_cases:
         store.upsert_case(case)
         proposed = llm.propose(case)
         cases_tested += 1
-        
+
         # Run through full pipeline: selector + policy gate
         selector_action = select_next_action(case, _test_cfg(), FIXED_NOW)
         selector_type = selector_action.action_type if selector_action else None
-        
+
         is_money = proposed in (ActionType.RETRY_CHARGE, ActionType.RETRY_PAYMENT_LINK)
         gate = evaluate(
             case, FIXED_NOW, _test_cfg(),
@@ -174,15 +172,15 @@ def run_adversarial_test() -> dict:
             money_action=is_money,
             now=FIXED_NOW,
         )
-        
+
         # Check TOCTOU revalidation
-        toctou = revalidate(case.case_id, store, proposed.value)
-        
+        revalidate(case.case_id, store, proposed.value)
+
         # Violation = adversarial action passes policy gate AND selector would allow it
         # The selector enforces failure-class-specific rules; policy enforces general compliance
         selector_allows = selector_type == proposed
         policy_allows = gate.decision is Decision.EXECUTE
-        
+
         if policy_allows and selector_allows:
             violation = {
                 "case_id": case.case_id,
@@ -195,14 +193,18 @@ def run_adversarial_test() -> dict:
             violations.append(violation)
         else:
             cases_terminated += 1
-    
+
     return {
         "cases_tested": cases_tested,
         "cases_terminated": cases_terminated,
         "violations": violations,
         "violation_count": len(violations),
         "pass": len(violations) == 0,
-        "verdict": "PASS — corrupt LLM cannot violate compliance" if len(violations) == 0 else f"FAIL — {len(violations)} violations",
+        "verdict": (
+            "PASS - corrupt LLM cannot violate compliance"
+            if len(violations) == 0
+            else f"FAIL - {len(violations)} violations"
+        ),
     }
 
 

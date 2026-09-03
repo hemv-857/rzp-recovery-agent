@@ -6,12 +6,12 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from .audit_chain import chain_append, get_audit_chain
 from .models import (
     AuditEvent,
     Intervention,
     RecoveryCase,
 )
-from .audit_chain import chain_append, get_audit_chain
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS cases (
@@ -198,7 +198,9 @@ class Store:
     def append_audit(self, event: AuditEvent) -> None:
         link = chain_append(event)
         self.conn.execute(
-            "INSERT INTO audit (event_id,ts,actor,event_type,case_id,payload,chain_hash,prev_hash,chain_index) "
+            "INSERT INTO audit"
+            " (event_id,ts,actor,event_type,case_id,payload,"
+            "chain_hash,prev_hash,chain_index) "
             "VALUES (?,?,?,?,?,?,?,?,?)",
             (event.event_id, event.ts, event.actor, event.event_type,
              event.case_id, json.dumps(event.payload), link.hash, link.prev_hash, link.index),

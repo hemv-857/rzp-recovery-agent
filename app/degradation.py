@@ -7,12 +7,12 @@ and audit trail. States: HEALTHY -> WATCH -> CONFIRMED.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
-from .models import FailureClass, RecoveryCase
+from .models import RecoveryCase
 
 UTC = timezone.utc
 

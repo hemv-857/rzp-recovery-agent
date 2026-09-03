@@ -82,7 +82,10 @@ def explain_decision(
 
     # 3. Attempt fatigue
     if contact_n >= 3:
-        chain.append(f"Attempt {contact_n + 1}: high contact fatigue, favoring low-touch or escalation")
+        chain.append(
+            f"Attempt {contact_n + 1}: high contact fatigue,"
+            " favoring low-touch or escalation"
+        )
         factors.append({"feature": "contact_fatigue", "direction": "high", "impact": "fatigue"})
     elif contact_n >= 1:
         factors.append({"feature": "contact_fatigue", "direction": "moderate", "impact": "retry"})
@@ -98,7 +101,11 @@ def explain_decision(
     }
     if case.method in method_reasons:
         chain.append(method_reasons[case.method])
-        factors.append({"feature": "method", "direction": case.method, "impact": "channel_specific"})
+        factors.append({
+            "feature": "method",
+            "direction": case.method,
+            "impact": "channel_specific",
+        })
 
     # 5. Model prediction context
     if prediction.confidence == "model":
@@ -107,7 +114,10 @@ def explain_decision(
             direction = "high" if fval > 0.5 else "low"
             factors.append({"feature": fname, "direction": direction, "impact": "model_weighted"})
     else:
-        chain.append(f"Rule-based fallback predicts {prediction.probability:.1%} recovery probability")
+        chain.append(
+            f"Rule-based fallback predicts"
+            f" {prediction.probability:.1%} recovery probability"
+        )
 
     # 6. Strategy reason
     if strategy:

@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .classifier import classify
 from .degradation import DegradationDetector
-from .explain import Explanation, explain_decision
+from .explain import explain_decision
 from .models import (
     ActionType,
     AuditEvent,
@@ -129,7 +129,7 @@ def mark_recovered(
     verification: str = "live_verified"
 ) -> RecoveryCase:
     """Mark a case as recovered with explicit verification mode.
-    
+
     verification: "live_verified" (cryptographic webhook) | "demo_verified" (local simulation)
     Mirrors Ahan-aura's strict separation of dispatched vs confirmed collections.
     """
@@ -145,7 +145,12 @@ def mark_recovered(
     store.append_audit(AuditEvent(
         actor="webhook" if via == "webhook" else "world",
         event_type="recovery.confirmed", case_id=case.case_id,
-        payload={"recovered_amount_paise": amount, "payment_id": payment_id, "via": via, "verification": verification},
+        payload={
+            "recovered_amount_paise": amount,
+            "payment_id": payment_id,
+            "via": via,
+            "verification": verification,
+        },
     ))
     return case
 

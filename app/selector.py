@@ -63,14 +63,14 @@ def _mk(case: RecoveryCase, at: datetime, action_type: ActionType,
 
 def _promise_adjusted_ev(case: RecoveryCase, base_ev: float) -> float:
     """Adjust expected value based on customer's promise-to-pay track record.
-    
+
     Broken promises reduce EV by 50% (as in agastyasharma20's implementation).
     Kept promises increase confidence slightly.
     """
     if not case.promised_at:
         return base_ev
-    
-    tracker = PromiseTracker()
+
+    PromiseTracker()
     # In real usage, we'd look up the customer's promise history
     # For now, we use the case's own promise state as a signal
     if case.promise_due:
@@ -91,7 +91,6 @@ def select_next_action(
     # Explicit NO_ACTION: evaluate all candidates, if max net EV <= 0, do nothing
     # Mirrors modiviveks' explicit NO_ACTION when all actions have negative EV
     from .recovery_model import predict_recovery
-    from .policy import economic_stop
 
     candidates = [
         ActionType.RETRY_PAYMENT_LINK,
@@ -114,7 +113,6 @@ def select_next_action(
     }
 
     best_ev = -1
-    best_action = None
     for act in candidates:
         pred = predict_recovery(case, act, contact_n, now.isoformat(), cfg)
         ev = pred.probability * case.amount
@@ -122,7 +120,6 @@ def select_next_action(
         net_ev = ev - cost
         if net_ev > best_ev:
             best_ev = net_ev
-            best_action = act
 
     if best_ev <= 0:
         return None  # Explicit NO_ACTION: all actions have negative net EV

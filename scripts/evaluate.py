@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Multi-seed evaluation: runs the full agent pipeline across N seeds,
 reports per-seed breakdown and aggregate statistics.
 
@@ -19,7 +18,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.measure import build_report, classification_eval, bootstrap_lift_ci
+from app.measure import bootstrap_lift_ci, build_report, classification_eval
 from app.store import Store
 from simulate.batch_generator import generate_batch
 from simulate.engine import run
@@ -73,7 +72,7 @@ def main() -> None:
     cfg = yaml.safe_load(Path("config.yaml").read_text())
     seeds = [42 + i * 7 for i in range(args.seeds)]  # 42, 49, 56, 63, 70
 
-    print(f"Running {args.seeds} seeds × {args.batch_size} cases each\n")
+    print(f"Running {args.seeds} seeds x {args.batch_size} cases each\n")
     results = []
     for seed in seeds:
         print(f"  seed {seed} ...", end=" ", flush=True)
@@ -84,7 +83,7 @@ def main() -> None:
 
     # aggregate
     lifts = [r["incremental_recovery_pp"] for r in results]
-    cis = [r["ci95_pp"] for r in results]
+    [r["ci95_pp"] for r in results]
     mean_lift = sum(lifts) / len(lifts)
     std_lift = (sum((x - mean_lift) ** 2 for x in lifts) / len(lifts)) ** 0.5
 
@@ -109,7 +108,7 @@ def main() -> None:
         "min_lift_pp": round(min(lifts), 2),
         "max_lift_pp": round(max(lifts), 2),
         "pooled_ci95_pp": [round(pooled_lo, 2), round(pooled_hi, 2)],
-        "all_seeds_positive": all(l > 0 for l in lifts),
+        "all_seeds_positive": all(x > 0 for x in lifts),
         "mean_classification_accuracy": round(
             sum(r["classification_accuracy"] for r in results) / len(results), 4
         ),
@@ -128,8 +127,13 @@ def main() -> None:
     print(f"  Total cases:            {aggregate['total_cases']}")
     print(f"  Mean lift:              {aggregate['mean_lift_pp']:+.2f} pp")
     print(f"  Std dev:                {aggregate['std_lift_pp']:.2f} pp")
-    print(f"  Range:                  [{aggregate['min_lift_pp']:+.1f}, {aggregate['max_lift_pp']:+.1f}] pp")
-    print(f"  Pooled 95% CI:          [{aggregate['pooled_ci95_pp'][0]:+.1f}, {aggregate['pooled_ci95_pp'][1]:+.1f}] pp")
+    print(
+        f"  Range:                  [{aggregate['min_lift_pp']:+.1f},"
+        f" {aggregate['max_lift_pp']:+.1f}] pp"
+    )
+    ci0 = aggregate['pooled_ci95_pp'][0]
+    ci1 = aggregate['pooled_ci95_pp'][1]
+    print(f"  Pooled 95% CI:          [{ci0:+.1f}, {ci1:+.1f}] pp")
     print(f"  All seeds positive:     {aggregate['all_seeds_positive']}")
     print(f"  Classification accuracy:{aggregate['mean_classification_accuracy']:.1%}")
     print(f"\n  Written to {out_path}")

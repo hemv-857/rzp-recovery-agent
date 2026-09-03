@@ -158,7 +158,7 @@ def should_write_off(case: RecoveryCase, now: datetime, cfg: dict[str, Any]) -> 
 @dataclass
 class InterventionBudget:
     """Shared intervention budget with atomic deduction.
-    
+
     Mirrors recoup's budget atomicity: budget is a shared resource,
     every action costs from it, and it cannot go negative.
     """
@@ -219,10 +219,10 @@ def get_budget() -> InterventionBudget:
 
 def revalidate(case_id: str, store, proposed_action: str) -> dict:
     """Re-check case state right before execution.
-    
+
     Mirrors recoup's TOCTOU guard: plan and execute are separated in time,
     so the case may have changed (opted out, recovered, written off).
-    
+
     Returns:
         {"ok": bool, "reason": str, "case_status": str}
     """

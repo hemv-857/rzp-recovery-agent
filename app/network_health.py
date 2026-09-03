@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from .models import RecoveryCase
 
@@ -90,7 +88,11 @@ class NetworkHealthMonitor:
             "emandate": "NACH processing delay or bank-side mandate issue",
             "nach": "NACH batch processing failure; check settlement cycle",
         }
-        return hypotheses.get(method, f"{method} success rate dropped {drop:.1%}; investigate upstream")
+        return hypotheses.get(
+            method,
+            f"{method} success rate dropped"
+            f" {drop:.1%}; investigate upstream",
+        )
 
 
 # Singleton instance

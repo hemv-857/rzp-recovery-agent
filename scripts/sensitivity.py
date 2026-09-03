@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-"""Sensitivity analysis: vary the recovery probability by ±20% and measure
+"""Sensitivity analysis: vary the recovery probability by +/-20% and measure
 impact on headline lift. Shows the result is not fragile to world-model params.
 
 Usage: .venv/bin/python scripts/sensitivity.py
@@ -65,7 +64,7 @@ def main() -> None:
 
     print("Sensitivity: varying base_pay_probability by ±20%\n")
     results = []
-    for mod, label in zip(modifiers, labels):
+    for mod, label in zip(modifiers, labels, strict=False):
         r = run_with_modifier(mod, cfg)
         results.append(r)
         print(f"  {label:>10}  lift {r['lift_pp']:+.1f}pp "
@@ -94,7 +93,7 @@ def main() -> None:
     Path("sensitivity_report.json").write_text(json.dumps(out, indent=2))
     print(f"\n  All positive: {all_positive}")
     print(f"  Lift range:   {range_lift:.1f}pp")
-    print(f"  Written to sensitivity_report.json")
+    print("  Written to sensitivity_report.json")
 
 
 if __name__ == "__main__":

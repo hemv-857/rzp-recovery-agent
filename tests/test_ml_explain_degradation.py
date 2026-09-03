@@ -4,8 +4,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-import pytest
-
 from app.degradation import DegradationDetector, DegradationState
 from app.explain import Explanation, explain_decision
 from app.models import (
@@ -16,10 +14,9 @@ from app.models import (
     RecoveryCase,
 )
 from app.recovery_model import (
-    RecoveryModel,
-    RecoveryPrediction,
     _CLASS_MAP,
     _METHOD_MAP,
+    RecoveryModel,
     predict_recovery,
 )
 
@@ -40,7 +37,12 @@ def _make_case(
         payment_id="pay_test_001",
         order_id="order_test_001",
         subscription_id="",
-        customer={"customer_id": "cus_001", "name": "Test", "phone": "+919000000000", "email": "t@t.com"},
+        customer={
+            "customer_id": "cus_001",
+            "name": "Test",
+            "phone": "+919000000000",
+            "email": "t@t.com",
+        },
         amount=amount,
         method=method,
         failure_class=failure_class,
@@ -82,28 +84,50 @@ class TestRecoveryModel:
     def test_rule_fallback_returns_valid_probability(self):
         model = RecoveryModel()
         case = _make_case()
-        pred = model.predict(case, ActionType.RETRY_CHARGE, 0, FIXED_NOW.isoformat(), _default_cfg())
+        cfg = _default_cfg()
+        pred = model.predict(
+            case, ActionType.RETRY_CHARGE, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
         assert 0 <= pred.probability <= 1
         assert pred.confidence == "rule_fallback"
 
     def test_rule_fallback_increases_for_whatsapp(self):
         model = RecoveryModel()
         case = _make_case()
-        pred_wa = model.predict(case, ActionType.NUDGE_WHATSAPP, 0, FIXED_NOW.isoformat(), _default_cfg())
-        pred_sms = model.predict(case, ActionType.NUDGE_SMS, 0, FIXED_NOW.isoformat(), _default_cfg())
+        cfg = _default_cfg()
+        pred_wa = model.predict(
+            case, ActionType.NUDGE_WHATSAPP, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        pred_sms = model.predict(
+            case, ActionType.NUDGE_SMS, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
         assert pred_wa.probability >= pred_sms.probability
 
     def test_rule_fallback_decreases_with_fatigue(self):
         model = RecoveryModel()
         case = _make_case()
-        pred_0 = model.predict(case, ActionType.NUDGE_WHATSAPP, 0, FIXED_NOW.isoformat(), _default_cfg())
-        pred_3 = model.predict(case, ActionType.NUDGE_WHATSAPP, 3, FIXED_NOW.isoformat(), _default_cfg())
+        cfg = _default_cfg()
+        pred_0 = model.predict(
+            case, ActionType.NUDGE_WHATSAPP, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        pred_3 = model.predict(
+            case, ActionType.NUDGE_WHATSAPP, 3,
+            FIXED_NOW.isoformat(), cfg,
+        )
         assert pred_3.probability < pred_0.probability
 
     def test_prediction_has_top_features(self):
         model = RecoveryModel()
         case = _make_case()
-        pred = model.predict(case, ActionType.RETRY_CHARGE, 0, FIXED_NOW.isoformat(), _default_cfg())
+        cfg = _default_cfg()
+        pred = model.predict(
+            case, ActionType.RETRY_CHARGE, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
         assert len(pred.top_features) > 0
 
     def test_as_dict_roundtrip(self):
@@ -146,7 +170,11 @@ class TestRecoveryModel:
             cases.append(c)
             rows.append({"case_id": c.case_id, "status": "executed", "action_type": "retry_charge"})
         model.train(cases, rows)
-        pred = model.predict(_make_case(), ActionType.RETRY_CHARGE, 0, FIXED_NOW.isoformat(), _default_cfg())
+        cfg = _default_cfg()
+        pred = model.predict(
+            _make_case(), ActionType.RETRY_CHARGE, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
         assert pred.confidence == "model"
         assert 0 <= pred.probability <= 1
 
@@ -163,24 +191,49 @@ class TestRecoveryModel:
 
 class TestExplain:
     def test_explain_decision_returns_explanation(self):
-        case = _make_case(failure_class=FailureClass.INSUFFICIENT_FUNDS, amount=50000)
-        prediction = predict_recovery(case, ActionType.NUDGE_WHATSAPP, 0, FIXED_NOW.isoformat(), _default_cfg())
-        explanation = explain_decision(case, ActionType.NUDGE_WHATSAPP, prediction, 0, strategy="salary_cycle_retry")
+        case = _make_case(
+            failure_class=FailureClass.INSUFFICIENT_FUNDS,
+            amount=50000,
+        )
+        cfg = _default_cfg()
+        prediction = predict_recovery(
+            case, ActionType.NUDGE_WHATSAPP, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        explanation = explain_decision(
+            case, ActionType.NUDGE_WHATSAPP,
+            prediction, 0, strategy="salary_cycle_retry",
+        )
         assert isinstance(explanation, Explanation)
         assert explanation.action_type == ActionType.NUDGE_WHATSAPP
         assert len(explanation.reasoning_chain) > 0
         assert len(explanation.top_factors) > 0
 
     def test_explain_high_value_case(self):
-        case = _make_case(failure_class=FailureClass.INVOICE_OVERDUE, amount=500000)
-        prediction = predict_recovery(case, ActionType.ESCALATE_HUMAN, 3, FIXED_NOW.isoformat(), _default_cfg())
-        explanation = explain_decision(case, ActionType.ESCALATE_HUMAN, prediction, 3)
+        case = _make_case(
+            failure_class=FailureClass.INVOICE_OVERDUE,
+            amount=500000,
+        )
+        cfg = _default_cfg()
+        prediction = predict_recovery(
+            case, ActionType.ESCALATE_HUMAN, 3,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        explanation = explain_decision(
+            case, ActionType.ESCALATE_HUMAN, prediction, 3,
+        )
         assert any("high" in f["direction"] for f in explanation.top_factors)
 
     def test_explain_to_dict(self):
         case = _make_case()
-        prediction = predict_recovery(case, ActionType.RETRY_CHARGE, 0, FIXED_NOW.isoformat(), _default_cfg())
-        explanation = explain_decision(case, ActionType.RETRY_CHARGE, prediction, 0)
+        cfg = _default_cfg()
+        prediction = predict_recovery(
+            case, ActionType.RETRY_CHARGE, 0,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        explanation = explain_decision(
+            case, ActionType.RETRY_CHARGE, prediction, 0,
+        )
         d = explanation.to_dict()
         assert "action" in d
         assert "recovery_probability" in d
@@ -188,24 +241,43 @@ class TestExplain:
 
     def test_explain_summary(self):
         case = _make_case()
-        prediction = predict_recovery(case, ActionType.NUDGE_SMS, 1, FIXED_NOW.isoformat(), _default_cfg())
-        explanation = explain_decision(case, ActionType.NUDGE_SMS, prediction, 1)
+        cfg = _default_cfg()
+        prediction = predict_recovery(
+            case, ActionType.NUDGE_SMS, 1,
+            FIXED_NOW.isoformat(), cfg,
+        )
+        explanation = explain_decision(
+            case, ActionType.NUDGE_SMS, prediction, 1,
+        )
         s = explanation.summary()
         assert "nudge_sms" in s
         assert "%" in s
 
     def test_explain_all_action_types(self):
         case = _make_case(failure_class=FailureClass.HARD_DECLINE)
+        cfg = _default_cfg()
         for action in ActionType:
-            prediction = predict_recovery(case, action, 0, FIXED_NOW.isoformat(), _default_cfg())
-            explanation = explain_decision(case, action, prediction, 0)
+            prediction = predict_recovery(
+                case, action, 0,
+                FIXED_NOW.isoformat(), cfg,
+            )
+            explanation = explain_decision(
+                case, action, prediction, 0,
+            )
             assert len(explanation.reasoning_chain) > 0
 
     def test_explain_all_failure_classes(self):
+        cfg = _default_cfg()
         for fc in FailureClass:
             case = _make_case(failure_class=fc)
-            prediction = predict_recovery(case, ActionType.RETRY_CHARGE, 0, FIXED_NOW.isoformat(), _default_cfg())
-            explanation = explain_decision(case, ActionType.RETRY_CHARGE, prediction, 0)
+            prediction = predict_recovery(
+                case, ActionType.RETRY_CHARGE, 0,
+                FIXED_NOW.isoformat(), cfg,
+            )
+            explanation = explain_decision(
+                case, ActionType.RETRY_CHARGE,
+                prediction, 0,
+            )
             assert len(explanation.reasoning_chain) > 0
 
 
@@ -267,7 +339,7 @@ class TestDegradation:
 
 class TestSelectorMLIntegration:
     def test_plan_and_schedule_includes_prediction(self):
-        from app.agent import plan_and_schedule, _recovery_model
+        from app.agent import plan_and_schedule
         from app.store import Store
 
         store = Store()
@@ -280,14 +352,14 @@ class TestSelectorMLIntegration:
         assert "explanation_summary" in action.reasoning
 
     def test_plan_and_schedule_with_degradation(self):
-        from app.agent import plan_and_schedule, _degradation
+        from app.agent import _degradation, plan_and_schedule
         from app.store import Store
 
         store = Store()
         case = _make_case()
         store.upsert_case(case)
         # record enough failures to trigger degradation
-        for i in range(15):
+        for _i in range(15):
             c = _make_case(failure_class=FailureClass.NETWORK_TIMEOUT)
             _degradation.record_failure(c, FIXED_NOW)
         action = plan_and_schedule(case, _default_cfg(), FIXED_NOW, store)

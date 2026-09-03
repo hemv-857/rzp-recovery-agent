@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Generate a held-out evaluation set: separate from the training seed,
 uses different random draws to prevent data leakage.
 
@@ -19,7 +18,6 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.classifier import classify
 from app.measure import build_report, classification_eval
 from app.store import Store
 from simulate.batch_generator import generate_batch
@@ -77,7 +75,9 @@ def main() -> None:
     print(f"  Treatment recovery rate: {hd['recovery_rate_treatment']:.1%}")
     print(f"  Control recovery rate:   {hd['recovery_rate_control']:.1%}")
     print(f"  Incremental lift:        {hd['incremental_recovery_pp']:+.1f}pp")
-    print(f"  95% CI:                  [{hd['incremental_recovery_ci95_pp'][0]:+.1f}, {hd['incremental_recovery_ci95_pp'][1]:+.1f}]pp")
+    ci0 = hd['incremental_recovery_ci95_pp'][0]
+    ci1 = hd['incremental_recovery_ci95_pp'][1]
+    print(f"  95% CI:                  [{ci0:+.1f}, {ci1:+.1f}]pp")
     print(f"  Written to {out_path}")
 
 

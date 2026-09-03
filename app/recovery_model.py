@@ -11,8 +11,6 @@ SHAP explainability provides per-case signed explanations for human approvers.
 """
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -143,7 +141,7 @@ class RecoveryModel:
     def _explain(self, features: list[float]) -> list[tuple[str, float]]:
         """Per-case SHAP explanation if available, else model feature_importances_."""
         if self._model is None:
-            return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES)))
+            return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES), strict=False))
 
         if _SHAP_AVAILABLE and hasattr(self, "_explainer"):
             try:
@@ -151,7 +149,7 @@ class RecoveryModel:
                 shap_vals = self._explainer.shap_values(X)
                 if isinstance(shap_vals, list):
                     shap_vals = shap_vals[1]  # positive class
-                pairs = list(zip(_FEATURE_NAMES, shap_vals[0].tolist()))
+                pairs = list(zip(_FEATURE_NAMES, shap_vals[0].tolist(), strict=False))
                 pairs.sort(key=lambda x: -abs(x[1]))
                 return pairs[:5]
             except Exception:
@@ -160,11 +158,11 @@ class RecoveryModel:
         # Fallback: model's built-in feature_importances_
         if hasattr(self._model, "feature_importances_"):
             importances = self._model.feature_importances_
-            pairs = list(zip(_FEATURE_NAMES, importances.tolist()))
+            pairs = list(zip(_FEATURE_NAMES, importances.tolist(), strict=False))
             pairs.sort(key=lambda x: -abs(x[1]))
             return pairs[:5]
 
-        return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES)))
+        return list(zip(_FEATURE_NAMES, [0.0] * len(_FEATURE_NAMES), strict=False))
 
     def build_explainer(self, background: np.ndarray | None = None) -> bool:
         """Build SHAP explainer for per-case explanations. Call after train()."""
@@ -219,7 +217,7 @@ class RecoveryModel:
         return {"trained": self._trained}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RecoveryModel":
+    def from_dict(cls, data: dict[str, Any]) -> RecoveryModel:
         m = cls()
         m._trained = data.get("trained", False)
         return m

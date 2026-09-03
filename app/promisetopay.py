@@ -41,7 +41,7 @@ class ParsedReply:
 @dataclass
 class PromiseTracker:
     """Tracks customer promise-to-pay reliability for EV adjustment.
-    
+
     In production, this would query cross-case history. For the demo,
     it uses in-memory tracking with a simple heuristic.
     """
@@ -75,17 +75,17 @@ class PromiseTracker:
 
     def get_reliability_score(self, customer_id: str) -> float:
         """Get promise reliability score (0.0 to 1.0).
-        
+
         Returns 0.5 for unknown customers, higher for good track records.
         """
         promises = self.customer_promises.get(customer_id, [])
         if not promises:
             return 0.5  # neutral prior
-        
+
         evaluated = [p for p in promises if p["kept"] is not None]
         if not evaluated:
             return 0.5  # no outcomes yet
-        
+
         kept = sum(1 for p in evaluated if p["kept"])
         return kept / len(evaluated)
 

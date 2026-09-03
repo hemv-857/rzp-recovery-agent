@@ -10,7 +10,6 @@ our existing selector/policy flow.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 
 @dataclass(frozen=True)
@@ -21,9 +20,9 @@ class PendingCase:
 
 
 def knapsack_select(
-    cases: List[PendingCase],
+    cases: list[PendingCase],
     capacity_hours: float,
-) -> Tuple[List[str], int]:
+) -> tuple[list[str], int]:
     """Solve 0/1 knapsack to maximize EV within human capacity.
 
     Returns: (selected_case_ids, total_ev_paise)
@@ -62,12 +61,15 @@ def knapsack_select(
 
 
 def greedy_select(
-    cases: List[PendingCase],
+    cases: list[PendingCase],
     capacity_hours: float,
-) -> Tuple[List[str], int]:
+) -> tuple[list[str], int]:
     """Greedy baseline: sort by EV/hr, take top-N until capacity exhausted."""
     sorted_cases = sorted(
-        cases, key=lambda c: c.expected_recovery_paise / max(c.handling_time_hours, 0.01), reverse=True
+        cases,
+        key=lambda c: c.expected_recovery_paise
+        / max(c.handling_time_hours, 0.01),
+        reverse=True,
     )
     selected = []
     total_hours = 0.0
