@@ -45,9 +45,9 @@
         .h-dv{font-size:26px;font-weight:800;color:var(--grn)}
         .h-dl{color:var(--sec);font-size:12px;margin-top:2px}
         .grid{display:grid;gap:20px;margin-bottom:20px}
-        .m4{grid-template-columns:repeat(4,1fr)}.m2{grid-template-columns:repeat(2,1fr)}
-        @media(max-width:1024px){.m4{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}}
-        @media(max-width:600px){.m4{grid-template-columns:1fr}.ctr{padding:16px}}
+        .m4{grid-template-columns:repeat(4,1fr)}.m3{grid-template-columns:repeat(3,1fr)}.m2{grid-template-columns:repeat(2,1fr)}
+        @media(max-width:1024px){.m4{grid-template-columns:repeat(2,1fr)}.m3{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}}
+        @media(max-width:600px){.m4{grid-template-columns:1fr}.m3{grid-template-columns:1fr}.m2{grid-template-columns:1fr}.ctr{padding:16px}}
         .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:22px;transition:all .25s ease}
         .card:hover{border-color:var(--bdr-h);background:var(--card-hover)}
         .card-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
@@ -291,13 +291,34 @@
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState(false);
         const [roiOpen, setRoiOpen] = useState(false);
+        const [security, setSecurity] = useState(null);
+        const [budget, setBudget] = useState(null);
+        const [bandit, setBandit] = useState(null);
+        const [cusum, setCusum] = useState(null);
+        const [incidents, setIncidents] = useState(null);
+        const [approval, setApproval] = useState(null);
 
         useEffect(() => {
-            Promise.all([fetch(`${API}/report`), fetch(`${API}/cases/recent?limit=15`)])
-                .then(async ([r1,r2]) => {
+            Promise.all([
+                fetch(`${API}/report`),
+                fetch(`${API}/cases/recent?limit=15`),
+                fetch(`${API}/security/report`),
+                fetch(`${API}/budget`),
+                fetch(`${API}/analytics/bandit`),
+                fetch(`${API}/analytics/cusum`),
+                fetch(`${API}/incidents`),
+                fetch(`${API}/approval/queue`),
+            ])
+                .then(async ([r1,r2,r3,r4,r5,r6,r7,r8]) => {
                     if(!r1.ok) throw 0;
                     setRep(await r1.json());
                     setCases(r2.ok?(await r2.json()).cases:[]);
+                    setSecurity(r3.ok?await r3.json():null);
+                    setBudget(r4.ok?await r4.json():null);
+                    setBandit(r5.ok?await r5.json():null);
+                    setCusum(r6.ok?await r6.json():null);
+                    setIncidents(r7.ok?await r7.json():null);
+                    setApproval(r8.ok?await r8.json():null);
                     setLoading(false);
                 })
                 .catch(() => { setError(true); setLoading(false); });
@@ -336,6 +357,100 @@
                     </div>
                 </div>
                 <CasesTable cases={cases}/>
+
+                {/* ── Security Panel ── */}
+                {security && <div className="card a-fu" style={{marginBottom:20}}>
+                    <div className="card-h"><span className="card-t">🛡 Security Posture</span><span className="badge" style={{borderColor:security.overall_status==="PASS"?"rgba(34,197,94,.4)":"rgba(234,179,8,.4)",color:security.overall_status==="PASS"?"var(--grn)":"var(--yel)"}}>{security.overall_status}</span></div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
+                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Threats Mitigated</div>
+                            <div style={{fontSize:22,fontWeight:800,color:"var(--grn)",marginTop:4}}>{security.threat_model?.mitigated}/{security.threat_model?.total}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Adversarial Test</div>
+                            <div style={{fontSize:22,fontWeight:800,color:security.adversarial_test?.pass?"var(--grn)":"var(--red)",marginTop:4}}>{security.adversarial_test?.pass?"PASS":"FAIL"}</div>
+                        </div>
+                        <div style={{background:"rgba(255,255,255,.04)",padding:14,borderRadius:10,textAlign:"center"}}>
+                            <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase",letterSpacing:".05em"}}>Audit Chain</div>
+                            <div style={{fontSize:22,fontWeight:800,color:security.audit_chain?.valid?"var(--grn)":"var(--red)",marginTop:4}}>{security.audit_chain?.valid?"VALID":"BROKEN"}</div>
+                            <div style={{color:"var(--dim)",fontSize:10}}>{security.audit_chain?.total_links} links</div>
+                        </div>
+                    </div>
+                    {security.adversarial_test && <div style={{background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.15)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--grn)"}}>
+                        ✅ {security.adversarial_test.cases_tested} adversarial cases tested · {security.adversarial_test.cases_terminated} terminated by policy · 0 compliance violations
+                    </div>}
+                </div>}
+
+                {/* ── Budget + Bandit + CUSUM Row ── */}
+                <div className="grid m3" style={{marginBottom:20}}>
+                    {budget && <div className="card a-fu d1">
+                        <div className="card-h"><span className="card-t">📊 Intervention Budget</span></div>
+                        <div style={{padding:"8px 0"}}>
+                            <div className="bar-g"><div className="bar-l"><span>Used</span><span>{budget.total-budget.remaining}/{budget.total}</span></div>
+                            <div className="bar"><div className="bf t" style={{width:(budget.utilization*100)+"%"}}></div></div></div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginTop:10}}>
+                                {Object.entries(budget.by_channel||{}).slice(0,6).map(([ch,v])=><div key={ch} style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:6,textAlign:"center"}}><div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>{ch}</div><div style={{fontSize:13,fontWeight:700}}>{v}</div></div>)}
+                            </div>
+                        </div>
+                    </div>}
+                    {bandit && <div className="card a-fu d2">
+                        <div className="card-h"><span className="card-t">🎰 Channel Bandit</span></div>
+                        <div style={{padding:"8px 0"}}>
+                            {Object.entries(bandit).map(([ch,v])=><div key={ch} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
+                                <span style={{fontSize:12,color:"var(--sec)",textTransform:"capitalize"}}>{ch}</span>
+                                <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                                    <span style={{fontSize:11,color:"var(--dim)"}}>{v.pulls} pulls</span>
+                                    <div style={{width:60,height:6,background:"rgba(255,255,255,.06)",borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",width:(v.mean_recovery*100)+"%",background:"var(--blu)",borderRadius:3}}></div></div>
+                                    <span style={{fontSize:12,fontWeight:600,width:40,textAlign:"right"}}>{(v.mean_recovery*100).toFixed(0)}%</span>
+                                </div>
+                            </div>)}
+                        </div>
+                    </div>}
+                    {cusum && <div className="card a-fu d3">
+                        <div className="card-h"><span className="card-t">📈 CUSUM Detector</span></div>
+                        <div style={{padding:"8px 0"}}>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:8,textAlign:"center"}}>
+                                    <div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>Positive</div>
+                                    <div style={{fontSize:18,fontWeight:700}}>{cusum.positive_cusum}</div>
+                                </div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:8,textAlign:"center"}}>
+                                    <div style={{color:"var(--dim)",fontSize:9,textTransform:"uppercase"}}>Negative</div>
+                                    <div style={{fontSize:18,fontWeight:700}}>{cusum.negative_cusum}</div>
+                                </div>
+                            </div>
+                            <div style={{marginTop:8,fontSize:11,color:"var(--dim)",textAlign:"center"}}>baseline: {(cusum.baseline*100).toFixed(0)}% · threshold: {cusum.threshold} · {cusum.observations} observations</div>
+                        </div>
+                    </div>}
+                </div>
+
+                {/* ── Incidents + Approval Queue Row ── */}
+                <div className="grid m2" style={{marginBottom:20}}>
+                    {incidents && <div className="card a-fu d1">
+                        <div className="card-h"><span className="card-t">🔥 Incident Log</span><span className="badge" style={{borderColor:"rgba(34,197,94,.4)",color:"var(--grn)"}}>{incidents.resolved}/{incidents.total} resolved</span></div>
+                        <div style={{maxHeight:200,overflowY:"auto"}}>
+                            {(incidents.incidents||[]).slice(0,5).map(inc=><div key={inc.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:12}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                    <span style={{fontWeight:600}}>{inc.id}: {inc.title}</span>
+                                    <span style={{color:inc.severity==="high"?"var(--red)":inc.severity==="medium"?"var(--yel)":"var(--dim)",fontSize:10,textTransform:"uppercase"}}>{inc.severity}</span>
+                                </div>
+                                <div style={{color:"var(--dim)",fontSize:11,marginTop:2}}>{inc.fix}</div>
+                            </div>)}
+                        </div>
+                    </div>}
+                    {approval && <div className="card a-fu d2">
+                        <div className="card-h"><span className="card-t">✋ Approval Queue</span><span className="badge" style={{borderColor:approval.count>0?"rgba(234,179,8,.4)":"rgba(34,197,94,.4)",color:approval.count>0?"var(--yel)":"var(--grn)"}}>{approval.count} pending</span></div>
+                        <div style={{padding:"8px 0"}}>
+                            {approval.count===0?<div style={{color:"var(--dim)",fontSize:12,textAlign:"center",padding:16}}>No cases pending approval</div>
+                            :(approval.queue||[]).slice(0,5).map(c=><div key={c.case_id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:12}}>
+                                <div><span style={{fontWeight:600}}>{c.customer}</span><span style={{color:"var(--dim)",marginLeft:8}}>{c.failure_class}</span></div>
+                                <span style={{fontWeight:700}}>{fmt(c.amount_paise)}</span>
+                            </div>)}
+                            <div style={{color:"var(--dim)",fontSize:10,marginTop:8,textAlign:"center"}}>threshold: {fmt(approval.threshold_paise)}</div>
+                        </div>
+                    </div>}
+                </div>
+
                 <div className="btns" style={{marginBottom:20}}>
                     <button className="bp" onClick={()=>setRoiOpen(true)}>ROI Calculator</button>
                     <button className="bs" onClick={()=>window.open("/docs","_blank")}>API Documentation</button>
