@@ -20,7 +20,6 @@ import hmac
 import json
 import sys
 import time
-import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -194,14 +193,12 @@ def main() -> None:
     print("\n" + "=" * 68)
     print("DASHBOARD")
     print("=" * 68)
-    print(f"    opening {base}/ in your browser ...")
-    webbrowser.open(base)
-    print(f"""
-    case audit   {base}/audit/{case1}
-    api docs     {base}/docs
-    calculator   {base}/  (ROI Calculator button)
-    Demo cases live in demo.db — the canonical report.json is untouched.
-""")
+    print(f"    dashboard   {base}/")
+    print(f"    case audit   {base}/audit/{case1}")
+    print(f"    api docs     {base}/docs")
+    print(f"    calculator   {base}/  (ROI Calculator button)")
+    print("\n    Demo cases live in demo.db — the canonical report.json is untouched.")
+    print(f"    Open {base}/ in your browser to see the dashboard.")
 
 
 if __name__ == "__main__":
