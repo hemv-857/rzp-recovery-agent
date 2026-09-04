@@ -308,13 +308,47 @@
         );
     }
 
-    function App() {
+    function WhatsAppPreviewModal({open, onClose, message}) {
+        if(!open || !message) return null;
+        return (
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+                <div className="modal-c" style={{maxWidth:420}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                        <h2>📱 WhatsApp Preview</h2>
+                        <button className="bs" onClick={onClose}>Close</button>
+                    </div>
+                    <div style={{background:"#0a0f1a",border:"1px solid var(--bdr)",borderRadius:16,padding:20,marginBottom:16,fontFamily:"system-ui"}}>
+                        {message.header && (
+                            <div style={{background:"rgba(59,130,246,0.15)",padding:"10px 14px",borderRadius:10,marginBottom:14,fontWeight:600,color:"var(--blu)",fontSize:14}}>
+                                {message.header.text}
+                            </div>
+                        )}
+                        <div style={{color:"var(--txt)",fontSize:15,lineHeight:1.6,marginBottom:16,whiteSpace:"pre-wrap"}}>{message.body}</div>
+                        {message.footer && (
+                            <div style={{color:"var(--dim)",fontSize:11,borderTop:"1px solid var(--bdr)",paddingTop:12}}>{message.footer}</div>
+                        )}
+                        {message.buttons && message.buttons.length > 0 && (
+                            <div style={{display:"flex",gap:8,marginTop:16,flexWrap:"wrap"}}>
+                                {message.buttons.map((b,i)=><button key={i} style={{padding:"10px 16px",borderRadius:8,border:"1px solid var(--bdr)",background:b.type==="url"?"rgba(34,197,94,0.15)":"rgba(59,130,246,0.1)",color:b.type==="url"?"var(--grn)":"var(--blu)",fontSize:13,fontWeight:600,cursor:"pointer"}}>{b.text}</button>)}
+                            </div>
+                        )}
+                    </div>
+                    <div style={{color:"var(--dim)",fontSize:11,textAlign:"center"}}>
+                        {message.body.length} chars · {message.within_limit?"✅ within 1024 limit":"⚠️ exceeds limit"}
+                    </div>
+                    <div className="mb" style={{marginTop:16}}><button className="bp" onClick={onClose}>Close Preview</button></div>
+                </div>
+            </div>
+        );
+    }
         const [rep, setRep] = useState(null);
         const [liveRep, setLiveRep] = useState(null);
         const [cases, setCases] = useState([]);
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState(false);
         const [roiOpen, setRoiOpen] = useState(false);
+        const [waPreviewOpen, setWaPreviewOpen] = useState(false);
+        const [waPreviewMsg, setWaPreviewMsg] = useState(null);
         const [auditOpen, setAuditOpen] = useState(false);
         const [selectedCase, setSelectedCase] = useState(null);
         const [security, setSecurity] = useState(null);
@@ -392,6 +426,8 @@
                         ws.close();
                         // Refresh cases table from server
                         fetch(`${API}/cases/recent?limit=15`).then(r=>r.json()).then(d=>{ if(d.cases) setCases(d.cases); }).catch(()=>{});
+                        // Multi-sensory celebration (Foura)
+                        try { window.dispatchEvent(new Event('recovery-complete')); } catch(e) {}
                     } else if(msg.type === "error") {
                         setRunning(false);
                         ws.close();
@@ -417,7 +453,9 @@
         const blocks=active.policy_transparency?.blocked_actions||{};
         const cpir=cost.cost_per_incremental_recovery_paise;
 
-        return (<>
+        return (
+            <>
+            <canvas id="confetti-canvas" style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:999}}/>
             <TopBar cases={batch.cases} treatment={batch.treatment_n} control={batch.control_n} onRefresh={fetchBaseline} onRunBatch={runBatch} running={running} progress={progress} isLive={!!liveRep} onDismissLive={dismissLive}/>
             <div className="ctr">
                 <Hero hd={hd} naiveRate={naiveRate}/>
@@ -591,6 +629,20 @@
 
                 <div className="btns" style={{marginBottom:20}}>
                     <button className="bp" onClick={()=>setRoiOpen(true)}>ROI Calculator</button>
+                    <button className="bp" onClick={()=>{
+                        const msg = {
+                            header: {text: "💳 Payment Pending"},
+                            body: "Hi Rahul, your payment of ₹1,798.60 didn't go through — looks like insufficient balance. No worries, you can complete it here: https://rzp.io/i/pay_d10c27a6348e78",
+                            footer: "From Razorpay Merchant • Secure Razorpay link",
+                            buttons: [
+                                {type: "url", text: "Pay Now"},
+                                {type: "quick_reply", text: "Need Help"},
+                            ],
+                            within_limit: true,
+                        };
+                        setWaPreviewMsg(msg);
+                        setWaPreviewOpen(true);
+                    }}>📱 WhatsApp Preview</button>
                     <button className="bs" onClick={()=>window.open("/docs","_blank")}>API Documentation</button>
                     <button className="bs" onClick={()=>window.open("https://github.com/hemv-857/rzp-recovery-agent","_blank")}>GitHub Repo</button>
                 </div>
@@ -616,6 +668,7 @@
             </div>
             <ROIModal open={roiOpen} onClose={()=>setRoiOpen(false)}/>
             <AuditModal open={auditOpen} onClose={()=>setAuditOpen(false)} caseId={selectedCase} API={API}/>
+            <WhatsAppPreviewModal open={waPreviewOpen} onClose={()=>setWaPreviewOpen(false)} message={waPreviewMsg}/>
         </>);
     }
 
@@ -642,40 +695,40 @@
                 <div className="modal-c"><div style={{padding:"40px",textAlign:"center",color:"var(--red)"}}>Failed to load audit trail</div></div>
             </div>
         );
-        const {case: c, actions, audit} = detail;
+const {case: caseData, actions, audit} = detail;
         const actorColor = {"classifier":"var(--blu)","selector":"var(--pur)","executor":"var(--grn)","policy":"var(--yel)","system":"var(--dim)"};
         const eventIcon = {"case.created":"📝","action.scheduled":"⏰","action.executed":"▶️","action.deferred":"⏸️","action.blocked":"🚫","case.written_off":"🗑️","case.recovered":"✅"};
         return (
             <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
                 <div className="modal-c" style={{maxWidth:900,maxHeight:"85vh",overflow:"auto"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                        <h2>Audit Trail — {c.case_id}</h2>
+                        <h2>Audit Trail — {caseData.case_id}</h2>
                         <button className="bs" onClick={onClose}>Close</button>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Failure Class</div>
-                            <div style={{fontSize:14,fontWeight:600}}>{c.failure_class.replace(/_/g," ")}</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{caseData.failure_class.replace(/_/g," ")}</div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Amount</div>
-                            <div style={{fontSize:14,fontWeight:600}}>{c.amount_paise ? (c.amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "—"}</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{caseData.amount_paise ? (caseData.amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "—"}</div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Status</div>
-                            <div style={{fontSize:14,fontWeight:600}}><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span></div>
+                            <div style={{fontSize:14,fontWeight:600}}><span className={`pill ${caseData.status}`}>{caseData.status.replace(/_/g," ")}</span></div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Group</div>
-                            <div style={{fontSize:14,fontWeight:600,color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group}</div>
+                            <div style={{fontSize:14,fontWeight:600,color:caseData.group==="treatment"?"var(--blu)":"var(--dim)"}}>{caseData.group}</div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Method</div>
-                            <div style={{fontSize:14,fontWeight:600}}>{c.method?.toUpperCase() || "—"}</div>
+                            <div style={{fontSize:14,fontWeight:600}}>{caseData.method?.toUpperCase() || "—"}</div>
                         </div>
                         <div style={{background:"rgba(255,255,255,0.04)",padding:12,borderRadius:8}}>
                             <div style={{color:"var(--sec)",fontSize:10,textTransform:"uppercase"}}>Recovered</div>
-                            <div style={{fontSize:14,fontWeight:600,color:c.recovered_amount_paise?"var(--grn)":"var(--dim)"}}>{c.recovered_amount_paise ? (c.recovered_amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "Not recovered"}</div>
+                            <div style={{fontSize:14,fontWeight:600,color:caseData.recovered_amount_paise?"var(--grn)":"var(--dim)"}}>{caseData.recovered_amount_paise ? (caseData.recovered_amount_paise/100).toLocaleString("en-IN",{style:"currency",currency:"INR"}) : "Not recovered"}</div>
                         </div>
                     </div>
                     <div style={{borderTop:"1px solid var(--bdr)",paddingTop:12}}>
@@ -683,7 +736,7 @@
                         <div style={{maxHeight:400,overflowY:"auto"}}>
                             {audit?.map(e => (
                                 <div key={e.event_id} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",fontSize:12}}>
-                                    <div style={{width:160,color:"var(--dim)",fontSize:10,whiteSpace:"nowrap"}>
+                                    <div style={{width:160,color:"var(--dim)",fontSize:10,whiteSpace:"nowrap"}}>
                                         {new Date(e.ts).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})}
                                     </div>
                                     <div style={{width:80,fontWeight:600,fontSize:10,textTransform:"uppercase",color:actorColor[e.actor]||"var(--dim)"}}>{e.actor}</div>
@@ -709,6 +762,74 @@
             </div>
         );
     }
+
+    // ── Multi-sensory feedback (Foura) ──
+    const AudioCtx = (() => {
+        let ctx = null;
+        return () => {
+            if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+            return ctx;
+        };
+    })();
+
+    function playRecoveryTriad() {
+        // Foura: E5 → B5 → E6 major triad
+        const ctx = AudioCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') ctx.resume();
+        const notes = [659.25, 987.77, 1318.51]; // E5, B5, E6
+        const now = ctx.currentTime;
+        notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.value = 0.08;
+            osc.connect(gain).connect(ctx.destination);
+            const t = now + i * 0.12;
+            osc.start(t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+            osc.stop(t + 0.65);
+        });
+    }
+
+    function burstConfetti(canvas) {
+        // Foura: 45-particle canvas blast
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width = canvas.offsetWidth;
+        const H = canvas.height = canvas.offsetHeight;
+        const particles = Array.from({length: 45}, () => ({
+            x: W/2, y: H/2,
+            vx: (Math.random()-0.5)*12, vy: -Math.random()*8 - 4,
+            r: 4 + Math.random()*4,
+            hue: 140 + Math.random()*60, // green-gold
+            life: 1.0
+        }));
+        const colors = ['#22c55e','#16a34a','#eab308','#f59e0b','#f97316'];
+        function frame() {
+            ctx.clearRect(0,0,W,H);
+            let alive = 0;
+            particles.forEach(p => {
+                if (p.life <= 0) return;
+                alive++;
+                p.x += p.vx; p.y += p.vy; p.vy += 0.18; // gravity
+                p.life -= 0.018;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
+                ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1,p.r*p.life), 0, Math.PI*2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            if (alive > 0) requestAnimationFrame(frame);
+        }
+        frame();
+    }
+
+    // Auto-play on batch completion
+    window.addEventListener('recovery-complete', () => {
+        playRecoveryTriad();
+        const c = document.getElementById('confetti-canvas');
+        if (c) burstConfetti(c);
+    });
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
     </script>

@@ -68,6 +68,11 @@ _STATIC = Path(__file__).parent / "static"
 if _STATIC.is_dir():
     app.mount("/static", StaticFiles(directory=_STATIC), name="static")
 
+# Foura-level: Razorpay webhook ingestion
+from .webhook import router as webhook_router  # noqa: E402
+
+app.include_router(webhook_router)
+
 
 @app.exception_handler(404)
 async def _custom_404(request: Request, exc):
@@ -575,6 +580,75 @@ def roi_calculator(
                     "the measured report",
         },
     }
+
+
+# --- WhatsApp preview (Foura-style) ---
+@app.get("/preview/whatsapp", tags=["tools"])
+def whatsapp_preview(
+    failure_class: str = "INSUFFICIENT_FUNDS",
+    amount_paise: int = 179860,
+    customer_name: str = "Rahul",
+    phone: str = "+919876543210",
+) -> dict[str, Any]:
+    """Preview the exact WhatsApp message for a failure class."""
+    from .whatsapp import build_recovery_message
+    msg = build_recovery_message(
+        customer_name=customer_name,
+        amount_display=fmt_rupees(amount_paise),
+        payment_link=f"https://rzp.io/i/demo_{failure_class.lower()}",
+        failure_class=failure_class,
+    )
+    msg.to = phone
+    return {
+        "header": msg.header,
+        "body": msg.body,
+        "footer": msg.footer,
+        "buttons": msg.buttons,
+        "payment_link": msg.payment_link,
+        "character_count": len(msg.body),
+        "within_limit": len(msg.body) <= 1024,
+    }
+
+
+# --- Currency conversion (Foura multi-currency) ---
+@app.get("/currency/convert", tags=["tools"])
+def currency_convert(
+    amount_paise: int,
+    from_currency: str = "INR",
+    to_currency: str = "USD",
+) -> dict[str, Any]:
+    """Convert amount between currencies (USD/EUR/INR)."""
+    from .currency import get_normalizer
+    n = get_normalizer()
+    converted = n.convert(amount_paise, from_currency, to_currency)
+    return {
+        "original": {
+            "amount_paise": amount_paise,
+            "currency": from_currency,
+            "display": n.format(amount_paise, from_currency),
+        },
+        "converted": {
+            "amount_paise": converted,
+            "currency": to_currency,
+            "display": n.format(converted, to_currency),
+        },
+        "rate": n.get_rate(from_currency, to_currency),
+    }
+
+
+# --- LLM diagnosis (Foura cognitive layer) ---
+@app.post("/diagnose", tags=["tools"])
+def llm_diagnose(payload: dict[str, Any]) -> dict[str, Any]:
+    """Run LLaMA-3 root-cause diagnosis on failure context."""
+    from .llm_client import get_groq_client
+    gc = get_groq_client()
+    if not gc.available():
+        return {
+            "diagnosis": "llm_unavailable",
+            "confidence": 0.0,
+            "reasoning": "GROQ_API_KEY not set",
+        }
+    return gc.diagnose(payload)
 
 
 # --- Provider switching (live Mock/Ollama/Claude toggle) ---

@@ -1,12 +1,13 @@
-"""Multi-armed bandit channel selection using Thompson Sampling.
+"""Multi-armed bandit channel selection using UCB1 (Upper Confidence Bound).
 
-Mirrors soumyadip-giri's ML-driven channel selector. Instead of fixed
-escalation, uses Beta distribution posterior sampling to pick the channel
-most likely to recover for this failure class + amount tier.
+Foura pattern: UCB1 balances exploration vs exploitation mathematically.
+Score = mean_recovery + c * sqrt(2 * ln(total_pulls) / arm_pulls)
+
+This provides deterministic, explainable exploration — no random sampling.
 """
 from __future__ import annotations
 
-import random
+import math
 from dataclasses import dataclass, field
 
 
@@ -14,32 +15,31 @@ from dataclasses import dataclass, field
 class BanditArm:
     """One channel's recovery statistics."""
     channel: str
-    alpha: float = 1.0   # Beta prior successes
-    beta: float = 1.0    # Beta prior failures
-    total_pulls: int = 0
-    total_recoveries: int = 0
-
-    def sample(self) -> float:
-        """Draw from the Beta posterior for Thompson Sampling."""
-        return random.betavariate(self.alpha, self.beta)
+    pulls: int = 0
+    recoveries: int = 0
 
     @property
     def mean(self) -> float:
-        return self.alpha / (self.alpha + self.beta)
+        return self.recoveries / self.pulls if self.pulls > 0 else 0.5
 
     def update(self, recovered: bool) -> None:
-        self.total_pulls += 1
+        self.pulls += 1
         if recovered:
-            self.alpha += 1
-            self.total_recoveries += 1
-        else:
-            self.beta += 1
+            self.recoveries += 1
+
+    def ucb_score(self, total_pulls: int, c: float = 1.414) -> float:
+        """UCB1 score: mean + c * sqrt(2 * ln(total) / n)."""
+        if self.pulls == 0:
+            return float('inf')  # Explore untried arms first
+        exploration = c * math.sqrt(2 * math.log(max(1, total_pulls)) / self.pulls)
+        return self.mean + exploration
 
 
 @dataclass
 class ChannelBandit:
-    """Thompson Sampling channel selector across WhatsApp, SMS, Email, Voice."""
+    """UCB1 channel selector across WhatsApp, SMS, Email, Voice, Retry."""
     channels: dict[str, BanditArm] = field(default_factory=dict)
+    exploration_constant: float = 1.414  # sqrt(2) — standard UCB1
 
     def __post_init__(self):
         if not self.channels:
@@ -48,15 +48,62 @@ class ChannelBandit:
                 "sms": BanditArm(channel="sms"),
                 "email": BanditArm(channel="email"),
                 "voice": BanditArm(channel="voice"),
+                "retry": BanditArm(channel="retry"),
             }
 
-    def select(self, exclude: set[str] | None = None) -> str:
-        """Pick the best channel via Thompson Sampling."""
+    def select(self, exclude: set[str] | None = None, context: dict | None = None) -> str:
+        """
+        Pick the best channel via UCB1.
+
+        context: optional dict with failure_class, amount_tier, customer_tier
+                 for future contextual bandit extension
+        """
         exclude = exclude or set()
         eligible = {k: v for k, v in self.channels.items() if k not in exclude}
         if not eligible:
-            return "email"  # fallback
-        return max(eligible, key=lambda k: eligible[k].sample())
+            return "email"
+
+        total_pulls = sum(arm.pulls for arm in self.channels.values())
+
+        # Apply contextual biases if provided
+        scores = {}
+        for ch, arm in eligible.items():
+            base_score = arm.ucb_score(total_pulls, self.exploration_constant)
+
+            # Contextual bias (Foura: different channels work better for different failures)
+            if context:
+                bias = self._contextual_bias(ch, context)
+                base_score *= (1 + bias)
+
+            scores[ch] = base_score
+
+        return max(scores, key=scores.get)
+
+    def _contextual_bias(self, channel: str, context: dict) -> float:
+        """Contextual bias based on failure class and amount tier."""
+        fc = context.get("failure_class", "").upper()
+        amount = context.get("amount_paise", 0)
+
+        # Foura-inspired heuristics
+        biases = {
+            "whatsapp": {
+                "INSUFFICIENT_FUNDS": 0.15,
+                "CUSTOMER_ABANDONMENT": 0.20,
+                "SUBSCRIPTION_FAILED": 0.10,
+            },
+            "sms": {"NETWORK_TIMEOUT": 0.15, "HARD_DECLINE": 0.10, "GATEWAY_TIMEOUT": 0.15},
+            "email": {"INVOICE_OVERDUE": 0.20, "PRICE_SHOCK": 0.10, "OVERDUE_GENUINE": 0.15},
+            "voice": {"INVOICE_OVERDUE": 0.25, "HARD_DECLINE": 0.20, "LATE_AUTH": 0.15},
+            "retry": {"NETWORK_TIMEOUT": 0.30, "ISSUER_UNAVAILABLE": 0.25, "GATEWAY_TIMEOUT": 0.20},
+        }
+
+        bias = biases.get(channel, {}).get(fc, 0.0)
+
+        # High amount bias toward personal channels
+        if amount > 500000 and channel in ("voice", "whatsapp"):
+            bias += 0.1
+
+        return bias
 
     def update(self, channel: str, recovered: bool) -> None:
         if channel in self.channels:
@@ -67,10 +114,14 @@ class ChannelBandit:
         return {
             ch: {
                 "mean_recovery": round(arm.mean, 4),
-                "pulls": arm.total_pulls,
-                "recoveries": arm.total_recoveries,
-                "alpha": arm.alpha,
-                "beta": arm.beta,
+                "pulls": arm.pulls,
+                "recoveries": arm.recoveries,
             }
             for ch, arm in self.channels.items()
         }
+
+    def reset(self) -> None:
+        """Reset all arms to initial state."""
+        for arm in self.channels.values():
+            arm.pulls = 0
+            arm.recoveries = 0

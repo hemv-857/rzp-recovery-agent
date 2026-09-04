@@ -1,6 +1,7 @@
-"""Tests for Thompson Sampling bandit channel selection."""
+"""Tests for UCB1 bandit channel selection."""
 from __future__ import annotations
 
+import math
 import random
 
 from app.bandit import BanditArm, ChannelBandit
@@ -8,49 +9,46 @@ from app.bandit import BanditArm, ChannelBandit
 
 def test_arm_defaults():
     arm = BanditArm(channel="sms")
-    assert arm.alpha == 1.0
-    assert arm.beta == 1.0
-    assert arm.total_pulls == 0
-    assert arm.total_recoveries == 0
-    assert 0.0 < arm.mean < 1.0
+    assert arm.pulls == 0
+    assert arm.recoveries == 0
+    assert arm.mean == 0.5  # default prior
 
 
 def test_arm_update_recovered():
     arm = BanditArm(channel="sms")
     arm.update(recovered=True)
-    assert arm.alpha == 2.0
-    assert arm.beta == 1.0
-    assert arm.total_pulls == 1
-    assert arm.total_recoveries == 1
+    assert arm.pulls == 1
+    assert arm.recoveries == 1
+    assert arm.mean == 1.0
 
 
 def test_arm_update_not_recovered():
     arm = BanditArm(channel="sms")
     arm.update(recovered=False)
-    assert arm.alpha == 1.0
-    assert arm.beta == 2.0
-    assert arm.total_pulls == 1
-    assert arm.total_recoveries == 0
+    assert arm.pulls == 1
+    assert arm.recoveries == 0
+    assert arm.mean == 0.0
 
 
-def test_arm_sample_in_range():
+def test_arm_ucb_score_unpulled():
     arm = BanditArm(channel="whatsapp")
-    for _ in range(100):
-        s = arm.sample()
-        assert 0.0 <= s <= 1.0
+    # Unpulled arm should have infinite score (explore first)
+    assert arm.ucb_score(total_pulls=10) == float('inf')
 
 
-def test_arm_mean_shifts():
+def test_arm_ucb_score_formula():
     arm = BanditArm(channel="email")
-    initial_mean = arm.mean
-    for _ in range(20):
-        arm.update(recovered=True)
-    assert arm.mean > initial_mean
+    arm.pulls = 10
+    arm.recoveries = 6  # mean = 0.6
+    total_pulls = 100
+    c = 1.414
+    expected = 0.6 + c * math.sqrt(2 * math.log(total_pulls) / 10)
+    assert abs(arm.ucb_score(total_pulls, c) - expected) < 0.001
 
 
 def test_bandit_defaults():
     b = ChannelBandit()
-    assert set(b.channels.keys()) == {"whatsapp", "sms", "email", "voice"}
+    assert set(b.channels.keys()) == {"whatsapp", "sms", "email", "voice", "retry"}
 
 
 def test_bandit_select_returns_string():
@@ -62,21 +60,21 @@ def test_bandit_select_returns_string():
 
 def test_bandit_select_exclude():
     b = ChannelBandit()
-    ch = b.select(exclude={"whatsapp", "sms", "voice"})
+    ch = b.select(exclude={"whatsapp", "sms", "voice", "retry"})
     assert ch == "email"
 
 
 def test_bandit_select_fallback_on_all_excluded():
     b = ChannelBandit()
-    ch = b.select(exclude={"whatsapp", "sms", "email", "voice"})
+    ch = b.select(exclude={"whatsapp", "sms", "email", "voice", "retry"})
     assert ch == "email"  # fallback
 
 
 def test_bandit_update():
     b = ChannelBandit()
     b.update("sms", recovered=True)
-    assert b.channels["sms"].total_recoveries == 1
-    assert b.channels["sms"].total_pulls == 1
+    assert b.channels["sms"].recoveries == 1
+    assert b.channels["sms"].pulls == 1
 
 
 def test_bandit_state():
@@ -86,21 +84,81 @@ def test_bandit_state():
     assert "whatsapp" in state
     assert state["whatsapp"]["pulls"] == 1
     assert state["whatsapp"]["recoveries"] == 1
+    assert "mean_recovery" in state["whatsapp"]
 
 
-def test_bandit_convergence():
-    """After many successful pulls on one arm, it should be selected most often."""
+def test_bandit_ucb1_explores_untried():
+    """Unpulled arms should be selected first (infinite UCB score)."""
+    b = ChannelBandit()
+    # All arms unpulled - any could be selected
+    ch = b.select()
+    assert ch in b.channels
+
+
+def test_bandit_ucb1_explores_unpulled():
+    """Untried arms get infinite UCB score and are selected first."""
+    b = ChannelBandit()
+    # All arms unpulled - any could be selected
+    ch = b.select()
+    assert ch in b.channels
+    # After one selection, that arm has 1 pull, others still 0
+    # Next selection should pick an untried arm
+    ch2 = b.select()
+    assert ch2 in b.channels
+
+
+def test_bandit_sms_worst_performer():
+    """SMS with 0% recovery should never be selected over better arms."""
     b = ChannelBandit()
     random.seed(42)
-    # Make voice always succeed
-    for _ in range(50):
-        b.update("voice", recovered=True)
-    # Make sms always fail
+    # Give all arms equal pulls with 100% recovery
+    for ch in b.channels:
+        for _ in range(20):
+            b.update(ch, recovered=True)
+    # Make SMS fail always
     for _ in range(50):
         b.update("sms", recovered=False)
 
     selections = [b.select() for _ in range(200)]
-    voice_count = selections.count("voice")
     sms_count = selections.count("sms")
-    # Voice should be selected much more often
-    assert voice_count > sms_count
+    # SMS should get very few selections
+    assert sms_count < 10  # < 5%
+
+
+def test_bandit_contextual_bias_insufficient_funds():
+    """INSUFFICIENT_FUNDS should bias toward WhatsApp."""
+    b = ChannelBandit()
+    for ch in b.channels:
+        for _ in range(20):
+            b.update(ch, recovered=True)
+
+    ctx = {"failure_class": "INSUFFICIENT_FUNDS", "amount_paise": 100000}
+    selections = [b.select(context=ctx) for _ in range(100)]
+    whatsapp_count = selections.count("whatsapp")
+    sms_count = selections.count("sms")
+    assert whatsapp_count > sms_count
+
+
+def test_bandit_contextual_bias():
+    """Context should bias channel selection."""
+    b = ChannelBandit()
+    # Equalize pulls
+    for ch in b.channels:
+        for _ in range(10):
+            b.update(ch, recovered=True)
+
+    # INSUFFICIENT_FUNDS should bias toward whatsapp
+    ctx = {"failure_class": "INSUFFICIENT_FUNDS", "amount_paise": 100000}
+    selections = [b.select(context=ctx) for _ in range(100)]
+    whatsapp_count = selections.count("whatsapp")
+    sms_count = selections.count("sms")
+    # WhatsApp should be preferred for insufficient funds
+    assert whatsapp_count > sms_count
+
+
+def test_bandit_reset():
+    b = ChannelBandit()
+    b.update("voice", recovered=True)
+    b.reset()
+    assert b.channels["voice"].pulls == 0
+    assert b.channels["voice"].recoveries == 0
