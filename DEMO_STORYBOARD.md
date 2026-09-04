@@ -124,12 +124,11 @@ paused, retries exceeded, case expiry."
 
 **Say this:**
 
-"Different failures, different strategies. Insufficient funds:
-79.7% vs 28.8% — salary-cycle retries work. Hard decline:
-37.8% vs 9.5% — never re-charge, send an alternate link.
-Invoice overdue: 73.2% vs 6.2% — highest lift because it
-escalates to humans. One size doesn't fit all. The classifier
-picks the strategy. The strategy determines the outcome."
+"Different failures, different strategies. Insufficient funds —
+salary-cycle retries. Hard decline — never re-charge, send an
+alternate link. Invoice overdue — escalate to humans, highest
+lift. The classifier picks the strategy. The strategy determines
+the outcome."
 
 ---
 
