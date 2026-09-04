@@ -123,8 +123,7 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
      receives Razorpay webhooks with <12ms sync response, then runs Groq LLaMA-3
      root-cause diagnosis in the background. Fallback to deterministic rules when
      `GROQ_API_KEY` is not set.
-15. **Multi-armed bandit (UCB1).** Upper Confidence Bound channel selector with contextual bias — faster convergence than Thompson Sampling.
-     Confidence Bound for faster convergence. Contextual bias for failure class
+15. **Multi-armed bandit (UCB1).** Upper Confidence Bound channel selector with contextual bias for failure class
      and amount tier. Live state displayed in the Engine tab.
 16. **Multi-currency support.** `GET /currency/convert` normalizes amounts across
      USD, EUR, and INR with live rate caching. Currency selector in Tools tab.

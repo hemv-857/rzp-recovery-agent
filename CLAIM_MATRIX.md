@@ -27,7 +27,7 @@ Every public claim backed to a file, test, or run command.
 | **Sensitivity analysis** | `scripts/sensitivity.py` — ±20% sweep on base_pay_probability, all lifts positive. Results in `sensitivity_report.json`. |
 | **Held-out evaluation** | `scripts/heldout_eval.py` — seed 999 held-out set (separate from training seed 42). Results in `heldout_evaluation.json`. |
 | **Webhook idempotency** | `app/store.py` — `webhook_events` table, `is_event_processed()` / `mark_event_processed()`, checked at webhook handler top in `app/main.py`. |
-| **Portfolio optimizer (0/1 knapsack)** | `app/portfolio.py:knapsack_select()` — maximizes EV within human-review hour capacity. Demo in `scripts/portfolio_demo.py`. |
+| **Portfolio optimizer (0/1 knapsack)** | `app/portfolio.py:knapsack_select()` — maximizes EV within human-review hour capacity. Demo in `scripts/demo_portfolio.py`. |
 | **SHAP per-case explainability** | `app/recovery_model.py:RecoveryModel._explain()` — TreeExplainer for per-case signed SHAP values. Falls back to feature_importances_. |
 | **India-specific compliance** | `app/policy.py:evaluate()` — RBI e-mandate pre-debit notice (≥₹5000 first attempt), TRAI quiet hours (21:00–09:00 IST). |
 | **Promise-to-pay EV feedback** | `app/promisetopay.py:PromiseTracker.adjust_ev()` — adjusts EV by customer promise reliability. Used in `app/selector.py`. |
@@ -56,7 +56,7 @@ Every public claim backed to a file, test, or run command.
 | **Prompt-injection demo** | `app/main.py:/security/prompt-injection-test` — LLM is advisory-only, rules gate decides. Mirrors Sparsh11Ranjan. |
 | **Human approval queue** | `app/main.py:/approval/queue`, `/approve`, `/reject` — >₹10k requires human. Mirrors Sparsh11Ranjan. |
 | **CUSUM change-point detector** | `app/cusum.py:CUSUMDetector` — Page's CUSUM for success-rate shifts. Mirrors soumyadip-giri. |
-| **Multi-armed bandit channel selection** | `app/bandit.py:ChannelBandit` — Thompson Sampling across WhatsApp/SMS/Email/Voice. Mirrors soumyadip-giri. |
+| **Multi-armed bandit channel selection** | `app/bandit.py:ChannelBandit` — UCB1 bandit across WhatsApp/SMS/Email/Voice. Mirrors soumyadip-giri. |
 | **Late-auth failure class** | `app/models.py:FailureClass.LATE_AUTH` + `app/classifier.py` + `app/selector.py` — authorized but not captured. Mirrors srishti-1935. |
 | **Uplift model** | `app/uplift.py:uplift()` — P(recovery\|A) - P(recovery\|no_action). Mirrors recoup/reclaim. |
 | **Intervention budget** | `app/policy.py:InterventionBudget` — shared cap, atomic deduction, per-channel. Mirrors recoup. |

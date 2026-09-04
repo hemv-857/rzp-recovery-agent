@@ -1396,12 +1396,12 @@ def prompt_injection_test(payload: dict[str, Any]) -> dict[str, Any]:
         customer=Customer(customer_id="cust_test", name="Test"),
         error_description=malicious_prompt,
     )
-    classified = classify(fp)
+    classified = classify(fp.raw_error_code, fp.error_description, fp.method)
 
     return {
         "adversarial_input": malicious_prompt,
-        "classified_as": classified.failure_class.value,
-        "confidence": classified.confidence,
+        "classified_as": classified[0].value,
+        "confidence": classified[1],
         "action_taken": "none — LLM is advisory-only, rules gate decides",
         "why_safe": [
             "LLM has no tool access, no credentials, no PII",
@@ -1501,13 +1501,13 @@ def cusum_update(payload: dict[str, Any]) -> dict[str, Any]:
 # --- Multi-Armed Bandit Channel Selection (soumyadip-giri pattern) ---
 @app.get("/analytics/bandit", tags=["reporting"])
 def bandit_state() -> dict[str, Any]:
-    """Thompson Sampling channel selector state."""
+    """UCB1 bandit channel selector state."""
     return _bandit.state
 
 
 @app.post("/analytics/bandit/select", tags=["reporting"])
 def bandit_select(payload: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Pick the best channel via Thompson Sampling."""
+    """Pick the best channel via UCB1 bandit."""
     exclude = set((payload or {}).get("exclude", []))
     selected = _bandit.select(exclude=exclude)
     return {"selected_channel": selected, "exclude": list(exclude), **_bandit.state}
