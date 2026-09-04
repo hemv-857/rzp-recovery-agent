@@ -777,7 +777,7 @@
                             </div>
                             <button className="btn btn-sm" onClick={loadWaPreview} style={{marginBottom:12}}>Load Preview</button>
                             {waMsg&&<div className="wa-bubble">
-                                {waMsg.header&&<div className="wa-header">{waMsg.header}</div>}
+                                {waMsg.header&&<div className="wa-header">{waMsg.header.text||waMsg.header}</div>}
                                 <div>{waMsg.body}</div>
                                 {waMsg.footer&&<div className="wa-footer">{waMsg.footer}</div>}
                                 {waMsg.buttons&&<div>{waMsg.buttons.map((b,i)=><span key={i} className={`wa-btn ${b.type==="url"?"primary":"secondary"}`}>{b.text}</span>)}</div>}
