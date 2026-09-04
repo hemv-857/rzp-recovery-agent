@@ -1,85 +1,28 @@
 # Demo Storyboard
 
-## [0:00–0:10] Cold Open
+## [0:00–0:20] What This Is
 
-**Screen:** Terminal. Type the command.
+**Screen:** README — top section
 
-```bash
-$ .venv/bin/python scripts/demo.py
-```
+**Say this:**
 
-**Say nothing.** Let the output start flowing. Let them see "STEP 0 — seed 150 simulated cases."
+"This is a revenue recovery agent for Razorpay. It detects failed
+payments, decides what to do about each one, executes the action,
+and measures whether the recovery actually created value.
 
-*Then:*
+Most recovery tools report gross money recovered. We measure
+incremental lift using randomized control groups — the same
+methodology medicine uses to prove drugs work.
 
-"Five minutes. No API keys. Every number real."
-
----
-
-## [0:10–0:40] The Punchline
-
-**Screen:** Dashboard loads. Hero section. Treatment bar tall. Control bar short.
-
-**Let them look at it for 3 seconds. Then:**
-
-"See that gap? Treatment: 70%. Control: 20%. That 50-point gap is
-money we created that wouldn't exist without this agent.
-
-Every other recovery tool reports the tall bar. We report the gap.
-That's the only number that matters."
-
-**Don't explain more. Let the visual do the work.**
+Core result: +49.8 percentage point lift over control. ₹67.72 crore
+incremental recovery. 95% confidence interval. Every number
+reproducible."
 
 ---
 
-## [0:40–1:10] How It Works
+## [0:20–0:50] How It Works
 
-**Screen:** Terminal output from demo — the webhook, the classification, the reply
-
-**Talk over the output:**
-
-"Payment fails. Fifteen failure types — each one gets a different
-strategy. Insufficient funds? Retry on salary day. Hard decline?
-Send an alternate payment link, never re-charge the same card.
-
-Customer replies 'kal pakka.' The parser catches it. Pauses the
-dunning ladder. Schedules a follow-up. Tracks whether they actually
-pay.
-
-Every step logged. Every decision explained. You can pull up any
-case and trace the full reasoning chain."
-
-**Key beat:** When "kal pakka" parses. That's the moment they lean in.
-
----
-
-## [1:10–1:50] The Honest Numbers
-
-**Screen:** Scroll through dashboard metrics
-
-**One by one. Pause on each:**
-
-"₹67.72 crore — incremental, not gross.
-
-+49.8 percentage points — the lift over control. 95% confidence
-interval: 45.8 to 53.6. Bootstrap. Seeded. Reproduce it yourself.
-
-279 promises captured. Hinglish parsing. 59% keep rate. ₹18.83 crore
-recovered through promises alone.
-
-21 customers said stop. We stopped. No silent failures.
-
-And here's the number most teams hide: 30% of our 'recoveries' would
-have happened anyway. We count that as a cost. That's how you earn
-trust."
-
-**The 30% line is the most important thing you say.**
-
----
-
-## [1:50–2:20] The Architecture
-
-**Screen:** README diagram
+**Screen:** Architecture diagram in README
 
 ```
 classifier → selector → policy gate → executor
@@ -87,24 +30,111 @@ classifier → selector → policy gate → executor
                 └──── audit trail ◀────────┘
 ```
 
-**Say this, fast:**
+**Say this:**
 
-"Classifier picks the failure type. Selector picks the strategy.
-Policy gate says yes or no — quiet hours, attempt caps, opt-outs,
-human approval above 25K. Executor sends. Audit trail records.
+"The pipeline is five stages.
 
-Policy gate is pure functions. No side effects. Deterministic.
-You can test every rule without running the whole system."
+Classifier maps error codes to 15 failure types. Each type gets a
+different strategy — insufficient funds retries on salary day,
+hard declines send alternate payment links, invoice overdue
+escalates to humans.
+
+Selector picks the best channel — WhatsApp, SMS, email, voice —
+using a UCB1 bandit that learns which channel works for which
+failure type.
+
+Policy gate is pure functions. Quiet hours, attempt caps, opt-outs,
+human approval above 25K. Deterministic, testable, no side effects.
+
+Executor sends the message. Audit trail records every decision.
+Append-only. Can't be faked after the fact."
 
 ---
 
-## [2:20–3:00] What Broke
+## [0:50–1:30] Live Walkthrough
 
-**Screen:** Just you talking, or code if you want visuals
+**Screen:** Dashboard + terminal side by side
+
+**Run through a case:**
+
+"Payment fails — ₹1,500, card, insufficient funds.
+
+Classifier: INSUFFICIENT_FUNDS, confidence 0.97.
+
+Selector: WhatsApp. UCB1 chose it because WhatsApp has the highest
+recovery rate for this failure type.
+
+Policy gate: pass. Not quiet hours. First attempt. Under ₹25K
+approval threshold.
+
+Message sent. Customer replies 'kal pakka' — Hinglish parser
+catches it. Promise tracked. Ladder pauses. Follow-up scheduled
+for next salary day.
+
+Payment comes in. Case closed. Full reasoning chain logged —
+nine events, every step traceable."
+
+---
+
+## [1:30–2:15] The Numbers
+
+**Screen:** Dashboard hero section
+
+**Go through each metric:**
+
+"₹199.58 crore at risk across 2,000 cases.
+
+Treatment recovery: 70.6%. Control recovery: 20.8%. The gap —
+49.8 percentage points — is value created by this agent.
+
+95% confidence interval: 45.8 to 53.6. Bootstrap, 2,000
+replications, seeded for reproducibility.
+
+₹67.72 crore incremental recovery.
+
+Cost: ₹78,000 in contact spend. That's ₹113 per incremental
+recovery.
+
+279 promises captured through Hinglish parsing. 59% keep rate.
+₹18.83 crore recovered through promises.
+
+21 customers opted out. All honored. Zero silent failures.
+
+And the number we report honestly: 30% of recovered customers
+would have paid anyway. We count that as a cost, not a win."
+
+---
+
+## [2:15–2:45] Per-Class Strategy
+
+**Screen:** Dashboard — scroll to per-class breakdown
+
+**Say this:**
+
+"Different failures, different strategies, different results.
+
+Insufficient funds: 79.7% treatment vs 28.8% control. Salary-cycle
+retries work — people get paid on the 1st and 5th.
+
+Hard decline: 37.8% vs 9.5%. Never re-charge the same card.
+Send an alternate link instead.
+
+Invoice overdue: 73.2% vs 6.2%. Highest lift. Because these
+escalate to humans — phone calls, not just messages.
+
+One size doesn't fit all. The classifier determines the strategy.
+The strategy determines the outcome."
+
+---
+
+## [2:45–3:15] What We Learned
+
+**Screen:** Just talk, or show code if you want
 
 **Tell this story:**
 
-"First version sent every failure to an LLM. Seemed smart.
+"First version sent every failure to an LLM for classification.
+Seemed like the right thing to do.
 
 Then we measured. 400 milliseconds per case. Fifteen paise each.
 Two thousand cases — three hundred rupees. And the LLM gave
@@ -112,114 +142,109 @@ contradictory results on similar error codes.
 
 We tried rules instead. Same accuracy. Five milliseconds. Zero cost.
 
-So we kept the LLM for edge cases only — the five percent of
-weird error texts that rules can't parse. Now it costs ten rupees
+So we kept the LLM for edge cases only — the 5% of unusual error
+texts that rules can't parse. Now the whole system costs ten rupees
 instead of three hundred.
 
-The lesson: don't use AI because it's impressive. Use it where
-rules actually fail. We measured the difference. Rules won."
+The lesson: measure the tradeoff. Don't assume AI is better.
+Sometimes rules are. We proved it."
 
 ---
 
-## [2:50–3:20] Future: Vulcan Integration
+## [3:15–3:45] Future: Vulcan Integration
 
-**Screen:** README or just talk
+**Screen:** README or diagram
 
 **Say this:**
 
 "Razorpay announced Vulcan — their payments foundation model.
-Four billion transactions. Three thousand signals per payment.
-It tells you *why* a payment failed.
+Four billion transactions, three thousand signals per payment.
+It tells you why a payment failed.
 
-We don't compete with that. We sit on top of it.
+We don't compete with Vulcan. We sit on top of it.
 
-Vulcan is Layer 1 — what happened and why. We're Layer 2 —
-what to do about the money already at risk. Layer 3 is
-measurement — did Layer 2 actually work?
+Vulcan is Layer 1 — what happened and why. This agent is Layer 2 —
+what to do about money already at risk. Measurement is Layer 3 —
+did Layer 2 work.
 
-When Razorpay exposes Vulcan signals through their API, we
-plug in here."
+When Razorpay exposes Vulcan signals through their API, the
+classifier already has a pluggable interface. We drop in Vulcan's
+richer failure reasons. Everything downstream — selector, policy
+gate, audit trail — stays the same.
 
-**Point at the classifier in the diagram.**
-
-"The classifier already has a pluggable interface. When Vulcan
-sends richer failure reasons, the classifier uses them. Everything
-downstream — selector, policy gate, audit trail — stays the same.
-
-We built the seam before we needed it. That's how you ship
-fast when the API drops."
+We built the integration seam before we needed it."
 
 ---
 
-## [3:20–4:00] The Proof
+## [3:45–4:15] Compliance and Audit
 
-**Screen:** Open a case in the dashboard. Show the audit trail.
-
-**Read it out:**
-
-"Payment failed. Classified as insufficient funds, confidence 0.97.
-Policy said execute — not quiet hours, first attempt, under 25K.
-Strategy: salary-cycle retry. Channel: WhatsApp. Customer replied
-'kal pakka.' Promise tracked. Follow-up scheduled. Payment came in.
-Case measured as incremental.
-
-That's nine events. Full chain. Immutable. You cannot retroactively
-change what happened."
-
----
-
-## [4:00–4:30] Close
-
-**Screen:** Back to the hero section
+**Screen:** Case detail modal — audit trail
 
 **Say this:**
 
-"Most recovery tools optimize for looking good. We optimize for
-being right.
+"Every case has an immutable audit trail.
 
-This is a measurement system that happens to recover payments.
-When the numbers are right, the business trusts the system.
-When the business trusts the system, it scales.
+webhook received → classified → policy verdict → strategy selected →
+message sent → customer replied → promise tracked → follow-up
+scheduled → payment confirmed → measured as incremental.
 
-The framework is ready. The numbers are reproducible.
-The audit trail is immutable."
+You can pull up any case and trace the full reasoning chain.
+In production, this is how you pass audits.
 
-**Last line, slow:**
+Policy gate blocks are logged with reasons. Opt-outs are honored.
+Quiet hours are enforced. Human approval required above ₹25K.
+No silent failures."
 
-"Revenue recovery is unsolved because nobody measures incremental
-lift. Now someone does."
+---
+
+## [4:15–4:30] Close
+
+**Screen:** Back to dashboard hero
+
+**Say this:**
+
+"Revenue recovery is unsolved because most tools optimize for
+appearing to recover money, not for creating value.
+
+We built a system that measures what matters, explains every
+decision, respects compliance, and is honest about its limitations.
+
+The numbers are reproducible. The audit trail is immutable.
+The control group is real."
 
 ---
 
 ## Notes
 
-- **Total time:** ~4:30. Leaves buffer for transitions.
-- **Pacing:** Fast during architecture, slow during numbers and honesty moments.
-- **The 30% line.** Say it, pause, let it land.
-- **The Vulcan section.** Don't oversell. "We built the seam before we needed it" is the line.
-- **End on the last line.** Don't add "thank you" or "any questions." Just stop.
+- **Total time:** ~4:30
+- **Tone:** Direct, technical, no hype. Let the numbers speak.
+- **Pacing:** Slow during numbers. Fast during architecture.
+- **The 30% line.** Say it, pause. That's the credibility moment.
+- **Vulcan section.** Don't oversell. "Built the seam before we needed it" is enough.
 
 ## Q&A Prep
 
-**"Why not just use Razorpay's recovery?"**
-"Razorpay doesn't measure incremental. They report gross.
-We prove the recovery created value."
+**"Why not use Razorpay's built-in recovery?"**
+"Razorpay doesn't measure incremental. They report gross. We prove
+the recovery created value."
 
-**"2,000 cases enough?"**
+**"Is 2,000 cases statistically significant?"**
 "The CI tells you. 45.8 to 53.6. Narrow enough to be confident.
-Wide enough to be honest."
+Wide enough to be honest. Bootstrap is seeded — reproduce it yourself."
 
-**"What's the actual cost?"**
-"₹78K in contact spend for ₹67.72 Cr incremental. That's
-₹113 per incremental recovery."
+**"What does this cost in production?"**
+"₹78K contact spend for ₹67.72 Cr incremental. ₹113 per incremental
+recovery. Contact costs come from config — merchants set their own."
 
 **"Why rules over ML for Hinglish?"**
-"Twenty-word vocabulary. Ninety-nine percent accuracy.
-Zero latency. Explainable. In production, you need to tell
-compliance why a message went out at 2 AM. Regex is easier
-to audit than a model."
+"20-word vocabulary. 99% accuracy. Zero latency. Explainable.
+You need to tell compliance why a message went out at 2 AM.
+Regex is easier to audit than a model."
 
 **"How does Vulcan change things?"**
-"It makes the classifier better. That's it. Selector, policy
-gate, audit trail, measurement — all unchanged. We designed
-for that plug."
+"Better classifier inputs. That's it. Selector, policy gate,
+audit trail, measurement — all unchanged. We designed for that plug."
+
+**"What about international payments?"**
+"Multi-currency support is built in — USD, EUR, INR with live
+rate conversion. The measurement framework is currency-agnostic."
