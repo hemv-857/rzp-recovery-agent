@@ -589,7 +589,7 @@
     // ── Engine Tab ──
     function EngineTab({bandit,cusum,budget,incidents,API,notify}){
         const[gmv,setGmv]=useState(100000);
-        const[settings,setSettings]=useState({rbi_max_retries:3,discount_ceiling_pct:5});
+        const[settings,setSettings]=useState({max_attempts:3,discount_pct:5});
         const[checkoutName,setCheckoutName]=useState("Rahul");
         const[checkoutEmail,setCheckoutEmail]=useState("rahul@example.com");
         const[checkoutAmount,setCheckoutAmount]=useState(1798);
@@ -732,8 +732,8 @@
                     <div className="card-header"><h2>⚙️ Engine Settings</h2></div>
                     <div className="card-body">
                         <div className="grid-3" style={{gap:10}}>
-                            <div><label className="form-label">RBI Retry Cap</label><select className="form-input" value={settings.rbi_max_retries} onChange={e=>setSettings({...settings,rbi_max_retries:Number(e.target.value)})}><option value={2}>2 (Strict)</option><option value={3}>3 (Standard)</option><option value={4}>4 (High Tolerance)</option></select></div>
-                            <div><label className="form-label">Discount Ceiling</label><select className="form-input" value={settings.discount_ceiling_pct} onChange={e=>setSettings({...settings,discount_ceiling_pct:Number(e.target.value)})}><option value={3}>3%</option><option value={5}>5%</option><option value={8}>8%</option></select></div>
+                            <div><label className="form-label">RBI Retry Cap</label><select className="form-input" value={settings.max_attempts} onChange={e=>setSettings({...settings,max_attempts:Number(e.target.value)})}><option value={2}>2 (Strict)</option><option value={3}>3 (Standard)</option><option value={4}>4 (High Tolerance)</option></select></div>
+                            <div><label className="form-label">Discount Ceiling</label><select className="form-input" value={settings.discount_pct} onChange={e=>setSettings({...settings,discount_pct:Number(e.target.value)})}><option value={3}>3%</option><option value={5}>5%</option><option value={8}>8%</option></select></div>
                             <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn btn-sm" onClick={saveSettings}>Save Settings</button></div>
                         </div>
                     </div>
@@ -896,7 +896,7 @@
                                 <div className="grid-3" style={{gap:6}}>
                                     <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Valid</div><div className="sec-val" style={{color:chainResult.valid?"var(--grn)":"var(--red)",fontSize:14}}>{chainResult.valid?"YES":"NO"}</div></div>
                                     <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Links</div><div className="sec-val" style={{fontSize:14}}>{chainResult.total_links}</div></div>
-                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Broken</div><div className="sec-val" style={{color:chainResult.broken_links===0?"var(--grn)":"var(--red)",fontSize:14}}>{chainResult.broken_links}</div></div>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Broken At</div><div className="sec-val" style={{color:chainResult.broken_at_index===null?"var(--grn)":"var(--red)",fontSize:14}}>{chainResult.broken_at_index===null?"None":chainResult.broken_at_index}</div></div>
                                 </div>
                             </div>}
                         </div>
