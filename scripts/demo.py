@@ -190,7 +190,7 @@ def main() -> None:
     print("      exploitation mathematically. Faster convergence, same guarantees.")
     print("      Lesson: simpler algorithm, better fit for this problem size.")
     print()
-    print("  (c) We tried full LLM classification (Groq LLaMA-3). Too slow,")
+    print("  (c) We tried full LLM classification (Groq Qwen). Too slow,")
     print("      too expensive at scale. Rules are 99% accurate for known error")
     print("      codes. Groq now handles only novel/edge-case descriptions.")
     print("      Lesson: simpler > fancier. Use AI where rules fail, not everywhere.")

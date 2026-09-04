@@ -173,7 +173,7 @@ using 0/1 knapsack DP."
 **Tell this story:**
 
 "First version sent every failure to an LLM for classification.
-Groq LLaMA-3. Seemed like the right thing to do.
+Groq Qwen. Seemed like the right thing to do.
 
 Then we measured. 400 milliseconds per case. Fifteen paise each.
 Two thousand cases — three hundred rupees. And the LLM gave

@@ -639,7 +639,7 @@ def currency_convert(
 # --- LLM diagnosis ---
 @app.post("/diagnose", tags=["tools"])
 def llm_diagnose(payload: dict[str, Any]) -> dict[str, Any]:
-    """Run LLaMA-3 root-cause diagnosis on failure context."""
+    """Run Qwen root-cause diagnosis on failure context."""
     from .llm_client import get_groq_client
     gc = get_groq_client()
     if not gc.available():

@@ -613,7 +613,7 @@
 
                 {/* Architecture DAG */}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-                    {[{tag:"Node 01 · Ingestion",title:"Webhook Classifier",desc:"Parses Razorpay payload, classifies 15 failure types."},{tag:"Node 02 · Reasoning",title:"LLaMA-3 Diagnostician",desc:"Groq-powered root cause synthesis."},{tag:"Node 03 · Safety",title:"Policy Gate",desc:"7 rules: quiet hours, caps, cooldowns, opt-outs.",hl:true},{tag:"Node 04 · Dispatch",title:"UCB1 Executor",desc:"Bandit selects channel. HMAC-signed links."}].map((n,i)=>(
+                    {[{tag:"Node 01 · Ingestion",title:"Webhook Classifier",desc:"Parses Razorpay payload, classifies 15 failure types."},{tag:"Node 02 · Reasoning",title:"Qwen Diagnostician",desc:"Groq-powered root cause synthesis."},{tag:"Node 03 · Safety",title:"Policy Gate",desc:"7 rules: quiet hours, caps, cooldowns, opt-outs.",hl:true},{tag:"Node 04 · Dispatch",title:"UCB1 Executor",desc:"Bandit selects channel. HMAC-signed links."}].map((n,i)=>(
                         <div key={i} className="card card-body" style={n.hl?{border:"1.5px solid var(--pur)"}:{}}>
                             <div className="tag" style={{marginBottom:5}}>{n.tag}</div>
                             <div style={{fontSize:12,fontWeight:700,marginBottom:3}}>{n.title}</div>
@@ -807,7 +807,7 @@
                 <div className="grid-2" style={{marginBottom:16}}>
                     {/* LLM Diagnose */}
                     <div className="card">
-                        <div className="card-header"><h2>🧠 LLaMA-3 Diagnosis</h2></div>
+                        <div className="card-header"><h2>🧠 Qwen Diagnosis</h2></div>
                         <div className="card-body">
                             <label className="form-label">Failure Context (JSON)</label>
                             <textarea className="form-input" value={diagPayload} onChange={e=>setDiagPayload(e.target.value)} rows={3}/>
@@ -837,7 +837,7 @@
                     <div className="card-header"><h2>Pipeline Architecture</h2></div>
                     <div className="card-body">
                         <div className="arch-flow">
-                            {["Webhook In","Classifier","LLaMA-3","Policy Gate","UCB1 Bandit","Executor","Recovery"].map((n,i)=>(
+                            {["Webhook In","Classifier","Qwen","Policy Gate","UCB1 Bandit","Executor","Recovery"].map((n,i)=>(
                                 <Fragment key={i}>{i>0&&<span className="arch-arrow">→</span>}<span className={`arch-node ${n==="Policy Gate"?"highlight":""}`}>{n}</span></Fragment>
                             ))}
                         </div>

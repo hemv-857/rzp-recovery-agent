@@ -3,7 +3,7 @@
 ## What We Got Wrong
 
 **1. LLM isn't always better.**
-First version used Groq LLaMA-3 for classification. 400ms per case,
+First version used Groq Qwen for classification. 400ms per case,
 15 paise each. Rules did the same job in 5ms at zero cost. We proved
 it by measuring both. Kept LLM for the 5% edge cases only.
 

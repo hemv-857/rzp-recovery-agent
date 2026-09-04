@@ -1,5 +1,5 @@
 """
-Groq LLaMA-3 client for root-cause diagnosis.
+Groq Qwen client for root-cause diagnosis.
 Deterministic sandwich — LLM only in cognitive layer.
 """
 import json
@@ -18,7 +18,7 @@ class LLMConfig:
 
 
 class GroqClient:
-    """Minimal Groq client for LLaMA-3 inference."""
+    """Minimal Groq client for Qwen inference."""
 
     def __init__(self, api_key: str | None = None, config: LLMConfig | None = None):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
@@ -41,7 +41,7 @@ class GroqClient:
 
     def diagnose(self, failure_context: dict) -> dict:
         """
-        Get root-cause diagnosis from LLaMA-3.
+        Get root-cause diagnosis from Qwen.
         Returns structured diagnosis or falls back to rule-based.
         """
         if not self.available():

@@ -105,7 +105,7 @@ never re-charge the same instrument; mandate issues route to re-auth.
 ## Advanced Features
 
 14. **Webhook ingestion + background LLM diagnosis.** `POST /webhook/razorpay`
-     receives Razorpay webhooks with <12ms sync response, then runs Groq LLaMA-3
+     receives Razorpay webhooks with <12ms sync response, then runs Groq Qwen
      root-cause diagnosis in the background. Fallback to deterministic rules when
      `GROQ_API_KEY` is not set.
 15. **Multi-armed bandit (UCB1).** Upper Confidence Bound channel selector with contextual bias for failure class
