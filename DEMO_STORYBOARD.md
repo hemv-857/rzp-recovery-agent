@@ -1,75 +1,83 @@
-# Demo Storyboard — 5 Minutes
+# Demo Storyboard
 
-## Opening Hook [0:00–0:15]
+## [0:00–0:10] Cold Open
 
-**Screen:** Terminal — run the demo script
+**Screen:** Terminal. Type the command.
 
-```
+```bash
 $ .venv/bin/python scripts/demo.py
 ```
 
-**Say this:** "This agent recovers ₹67 crore. But that's not the interesting part."
+**Say nothing.** Let the output start flowing. Let them see "STEP 0 — seed 150 simulated cases."
 
-*Pause. Let them wonder what IS the interesting part.*
+*Then:*
 
----
-
-## The Twist [0:15–0:45]
-
-**Screen:** Dashboard hero — Treatment vs Control bars
-
-**Say this:** "Most recovery tools report gross money recovered. We report
-*incremental* — money that wouldn't have come in without us.
-
-Treatment: 70.6%. Control: 20.8%. That 49.8 percentage point gap?
-That's real value created. The 30% of customers who would've paid anyway?
-We report that too.
-
-This is how medicine proves drugs work. This is how recovery
-should be measured."
-
-**Key visual:** The two bars side by side. Treatment taller than control.
-The gap is the whole point.
+"Five minutes. No API keys. Every number real."
 
 ---
 
-## The Pipeline [0:45–1:15]
+## [0:10–0:40] The Punchline
 
-**Screen:** Live demo output flowing in terminal
+**Screen:** Dashboard loads. Hero section. Treatment bar tall. Control bar short.
 
-**Let it run. Narrate over it:**
+**Let them look at it for 3 seconds. Then:**
 
-"Payment fails. Classifier runs — 15 failure types, each gets a different
-strategy. Policy gate checks: quiet hours? Opted out? Attempt cap?
-Everything audit-logged.
+"See that gap? Treatment: 70%. Control: 20%. That 50-point gap is
+money we created that wouldn't exist without this agent.
 
-Customer replies 'kal pakka' — Hinglish parser catches it, pauses the
-ladder, schedules follow-up. Promise tracked. Payment recovered.
-Full reasoning chain, every step."
+Every other recovery tool reports the tall bar. We report the gap.
+That's the only number that matters."
 
-**Key moment:** When "kal pakka" gets parsed. That's the detail that
-makes judges lean in.
+**Don't explain more. Let the visual do the work.**
 
 ---
 
-## The Numbers [1:15–2:00]
+## [0:40–1:10] How It Works
 
-**Screen:** Dashboard — scroll through metrics
+**Screen:** Terminal output from demo — the webhook, the classification, the reply
 
-**Hit these in order:**
+**Talk over the output:**
 
-1. **₹67.72 Cr** — "Incremental recovery above control"
-2. **+49.8 pp** — "Lift. 95% CI: 45.8 to 53.6. Bootstrap, seeded, reproducible."
-3. **₹199.58 Cr** — "Total amount at risk across 2,000 cases"
-4. **279 promises** — "Hinglish parsing. 59% keep rate. ₹18.83 Cr through promises."
-5. **21 opt-outs** — "Honored. Every one. No silent failures."
+"Payment fails. Fifteen failure types — each one gets a different
+strategy. Insufficient funds? Retry on salary day. Hard decline?
+Send an alternate payment link, never re-charge the same card.
 
-**Say this:** "30% of our recoveries would've happened anyway. We count
-that as a cost, not a win. That's how you earn trust."
+Customer replies 'kal pakka.' The parser catches it. Pauses the
+dunning ladder. Schedules a follow-up. Tracks whether they actually
+pay.
+
+Every step logged. Every decision explained. You can pull up any
+case and trace the full reasoning chain."
+
+**Key beat:** When "kal pakka" parses. That's the moment they lean in.
 
 ---
 
-## The Architecture [2:00–2:30]
+## [1:10–1:50] The Honest Numbers
+
+**Screen:** Scroll through dashboard metrics
+
+**One by one. Pause on each:**
+
+"₹67.72 crore — incremental, not gross.
+
++49.8 percentage points — the lift over control. 95% confidence
+interval: 45.8 to 53.6. Bootstrap. Seeded. Reproduce it yourself.
+
+279 promises captured. Hinglish parsing. 59% keep rate. ₹18.83 crore
+recovered through promises alone.
+
+21 customers said stop. We stopped. No silent failures.
+
+And here's the number most teams hide: 30% of our 'recoveries' would
+have happened anyway. We count that as a cost. That's how you earn
+trust."
+
+**The 30% line is the most important thing you say.**
+
+---
+
+## [1:50–2:20] The Architecture
 
 **Screen:** README diagram
 
@@ -79,116 +87,139 @@ classifier → selector → policy gate → executor
                 └──── audit trail ◀────────┘
 ```
 
-**Say this:** "Nine failure classes. Different strategy for each.
-Insufficient funds → salary cycle retry. Hard decline → alternate
-instrument, never re-charge. Invoice overdue → escalate to humans.
+**Say this, fast:**
 
-Policy gate is pure functions. Deterministic. Testable. No side effects.
-Audit trail is append-only. Can't retroactively fake a decision."
+"Classifier picks the failure type. Selector picks the strategy.
+Policy gate says yes or no — quiet hours, attempt caps, opt-outs,
+human approval above 25K. Executor sends. Audit trail records.
+
+Policy gate is pure functions. No side effects. Deterministic.
+You can test every rule without running the whole system."
 
 ---
 
-## What Broke [2:30–3:15]
+## [2:20–3:00] What Broke
 
-**Screen:** Code snippets or just talk
+**Screen:** Just you talking, or code if you want visuals
 
 **Tell this story:**
 
-"First version: full LLM classification. Every failure to Groq.
-Seemed smart. Then we measured.
+"First version sent every failure to an LLM. Seemed smart.
 
-400ms per case. ₹0.15 each. 2,000 cases = ₹300. And contradictory
-results on similar errors.
+Then we measured. 400 milliseconds per case. Fifteen paise each.
+Two thousand cases — three hundred rupees. And the LLM gave
+contradictory results on similar error codes.
 
-We tried rules. 99% accuracy. 5ms. Zero cost.
+We tried rules instead. Same accuracy. Five milliseconds. Zero cost.
 
-So we kept Groq for edge cases only — the 5% of error texts that
-rules can't parse. Now it costs ₹10 instead of ₹300.
+So we kept the LLM for edge cases only — the five percent of
+weird error texts that rules can't parse. Now it costs ten rupees
+instead of three hundred.
 
-**The lesson:** Don't use AI because it's trendy. Use it where
-rules fail. We measured the tradeoff. Rules won. Groq catches
-the leftovers."
-
----
-
-## The Proof [3:15–4:00]
-
-**Screen:** Dashboard — case ledger, open a case, show audit trail
-
-**Say this:** "Every case has a full reasoning chain."
-
-```
-webhook received
-  → classified: INSUFFICIENT_FUNDS (0.97)
-  → policy: EXECUTE (not quiet hours, attempt 1/3)
-  → strategy: salary-aligned retry (1st/5th)
-  → channel: WhatsApp (UCB1 selected)
-  → sent: "Hi Rahul, your payment didn't go through..."
-  → reply: "kal pakka" → promise tracked
-  → follow-up scheduled: 2026-09-01 10:00 IST
-  → payment succeeded
-  → measured: incremental (vs control)
-```
-
-**Say this:** "This isn't a log. It's a reasoning chain. You can
-trace every decision back to its cause. In production, this is
-how you pass audits."
+The lesson: don't use AI because it's impressive. Use it where
+rules actually fail. We measured the difference. Rules won."
 
 ---
 
-## Close [4:00–4:30]
+## [2:50–3:20] Future: Vulcan Integration
 
-**Screen:** Back to dashboard hero
+**Screen:** README or just talk
 
-**Say this:** "Revenue recovery is unsolved because most tools
-optimize for *appearing* to recover money, not for *creating* value.
+**Say this:**
 
-We built a system that measures what matters, explains every decision,
-respects compliance, and is honest about its limitations.
+"Razorpay announced Vulcan — their payments foundation model.
+Four billion transactions. Three thousand signals per payment.
+It tells you *why* a payment failed.
 
-When Razorpay's Vulcan API ships, we plug it in. When real merchants
-run it, the framework holds. The numbers are reproducible.
-The audit trail is immutable. The control group is real."
+We don't compete with that. We sit on top of it.
 
-**Final line:** "This isn't a recovery project. It's a measurement
-project. Recovery is just how we generate the data."
+Vulcan is Layer 1 — what happened and why. We're Layer 2 —
+what to do about the money already at risk. Layer 3 is
+measurement — did Layer 2 actually work?
+
+When Razorpay exposes Vulcan signals through their API, we
+plug in here."
+
+**Point at the classifier in the diagram.**
+
+"The classifier already has a pluggable interface. When Vulcan
+sends richer failure reasons, the classifier uses them. Everything
+downstream — selector, policy gate, audit trail — stays the same.
+
+We built the seam before we needed it. That's how you ship
+fast when the API drops."
 
 ---
 
-## B-Roll Suggestions
+## [3:20–4:00] The Proof
 
-If you want cutaways during narration:
+**Screen:** Open a case in the dashboard. Show the audit trail.
 
-1. **Running the demo** — terminal output flowing
-2. **Dashboard charts** — the lift bars, the funnel, the spend doughnut
-3. **Code scrolling** — `policy.py` (pure functions), `measure.py` (bootstrap CI)
-4. **Case detail modal** — the audit trail expanding
-5. **WhatsApp preview** — the message template rendering
+**Read it out:**
 
-## Pacing Notes
+"Payment failed. Classified as insufficient funds, confidence 0.97.
+Policy said execute — not quiet hours, first attempt, under 25K.
+Strategy: salary-cycle retry. Channel: WhatsApp. Customer replied
+'kal pakka.' Promise tracked. Follow-up scheduled. Payment came in.
+Case measured as incremental.
 
-- **Don't rush the numbers.** Let judges read them.
-- **Pause after "30% would've paid anyway."** That's the honesty moment.
-- **Slow down during "What Broke."** That's where you show thinking.
-- **End strong.** "Measurement project, not recovery project" is the line they remember.
+That's nine events. Full chain. Immutable. You cannot retroactively
+change what happened."
 
-## If Judges Ask Hard Questions
+---
 
-**"Why not just use Razorpay's built-in recovery?"**
-"Razorpay doesn't measure incremental lift. They report gross.
-We prove the recovery actually created value."
+## [4:00–4:30] Close
 
-**"Is 2,000 cases enough?"**
-"The CI tells you. 95% CI: 45.8 to 53.6. Narrow enough to be
-confident. Wide enough to be honest. The bootstrap is seeded —
-you can reproduce it."
+**Screen:** Back to the hero section
 
-**"What's the cost?"**
+**Say this:**
+
+"Most recovery tools optimize for looking good. We optimize for
+being right.
+
+This is a measurement system that happens to recover payments.
+When the numbers are right, the business trusts the system.
+When the business trusts the system, it scales.
+
+The framework is ready. The numbers are reproducible.
+The audit trail is immutable."
+
+**Last line, slow:**
+
+"Revenue recovery is unsolved because nobody measures incremental
+lift. Now someone does."
+
+---
+
+## Notes
+
+- **Total time:** ~4:30. Leaves buffer for transitions.
+- **Pacing:** Fast during architecture, slow during numbers and honesty moments.
+- **The 30% line.** Say it, pause, let it land.
+- **The Vulcan section.** Don't oversell. "We built the seam before we needed it" is the line.
+- **End on the last line.** Don't add "thank you" or "any questions." Just stop.
+
+## Q&A Prep
+
+**"Why not just use Razorpay's recovery?"**
+"Razorpay doesn't measure incremental. They report gross.
+We prove the recovery created value."
+
+**"2,000 cases enough?"**
+"The CI tells you. 45.8 to 53.6. Narrow enough to be confident.
+Wide enough to be honest."
+
+**"What's the actual cost?"**
 "₹78K in contact spend for ₹67.72 Cr incremental. That's
-₹0.11 per ₹100 recovered. The cost per incremental recovery
-is ₹113."
+₹113 per incremental recovery."
 
-**"Why Hinglish parsing with rules, not ML?"**
-"20-word vocabulary. 99% accuracy. Zero latency. Explainable.
-In production, you need to explain to compliance why you
-sent a message at 2 AM. Regex is easier to audit than a model."
+**"Why rules over ML for Hinglish?"**
+"Twenty-word vocabulary. Ninety-nine percent accuracy.
+Zero latency. Explainable. In production, you need to tell
+compliance why a message went out at 2 AM. Regex is easier
+to audit than a model."
+
+**"How does Vulcan change things?"**
+"It makes the classifier better. That's it. Selector, policy
+gate, audit trail, measurement — all unchanged. We designed
+for that plug."
