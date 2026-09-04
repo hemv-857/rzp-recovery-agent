@@ -89,32 +89,24 @@ Case closed. Nine events logged, every step traceable."
 
 **Go through each metric:**
 
-"₹199.58 crore at risk across 2,000 cases.
+"So here's what happened. ₹200 crore at risk across 2,000 cases.
 
-Treatment recovery: 70.6%. Control recovery: 20.8%. The gap —
-49.8 percentage points — is value created by this agent.
+The group that got our recovery messages — 70.6% paid. The control
+group that got nothing — 20.8% paid. That 50 point gap is value
+this agent created.
 
-95% confidence interval: 45.8 to 53.6. Bootstrap, 2,000
-replications, seeded for reproducibility.
+We're 95% confident the real number is between 46 and 54 points.
+That's ₹68 crore incremental.
 
-₹67.72 crore incremental recovery.
+Contact cost was ₹78K total. That's ₹113 per incremental recovery.
 
-Cost: ₹78,000 in contact spend. That's ₹113 per incremental
-recovery. The ROI calculator lets merchants plug in their own
-numbers — amount at risk, baseline recovery, estimated lift —
-and get projected incremental recovery with every assumption stated.
+We also captured 279 promises — 'kal pakka' type replies. 59% of
+those actually paid. ₹19 crore came through promises alone.
 
-279 promises captured through Hinglish parsing. 59% keep rate.
-₹18.83 crore recovered through promises.
+21 people opted out. All honored immediately. Zero silent failures.
 
-21 customers opted out. All honored. Zero silent failures.
-
-And the number we report honestly: 30% of recovered customers
-would have paid anyway. We count that as a cost, not a win.
-
-The recovery funnel shows where cases drop off — 148 ingested,
-194 eligible, 106 recovered. Drop-off reasons tracked: promise
-paused, retries exceeded, case expiry."
+And the honest number — 30% of people we recovered would've paid
+anyway. We count that as a cost, not a win. Most tools don't."
 
 ---
 
