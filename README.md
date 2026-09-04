@@ -123,7 +123,7 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
      receives Razorpay webhooks with <12ms sync response, then runs Groq LLaMA-3
      root-cause diagnosis in the background. Fallback to deterministic rules when
      `GROQ_API_KEY` is not set.
-15. **Multi-armed bandit (UCB1).** Replaces Thompson Sampling with Upper
+15. **Multi-armed bandit (UCB1).** Upper Confidence Bound channel selector with contextual bias — faster convergence than Thompson Sampling.
      Confidence Bound for faster convergence. Contextual bias for failure class
      and amount tier. Live state displayed in the Engine tab.
 16. **Multi-currency support.** `GET /currency/convert` normalizes amounts across
@@ -328,7 +328,7 @@ The dashboard is a **React 18 app** (vendored scripts, no CDN dependency, no bui
 - **Animated counter numbers** that count up on load
 - **Chart.js integration** with spend-by-channel doughnut and per-class recovery bar chart
 - **Security posture** panel with audit trail integrity checks
-- **Thompson Sampling bandit** allocation visualization
+- **UCB1 bandit** allocation visualization with live channel scores
 - **Live WebSocket replay** — click "Run Batch" to watch cases process in real-time
 - **ROI calculator modal** with live calculation against `/calculator`
 - **Interactive cases table** with clickable audit drill-down links
@@ -350,7 +350,7 @@ The dashboard is a **React 18 app** (vendored scripts, no CDN dependency, no bui
 | `app/policy.py` | Compliance/stopping rules — pure functions, unit-tested |
 | `app/copywriter.py` | Hinglish templates + TTS call scripts + opt-out footer |
 | `app/promisetopay.py` | Inbound-reply intent parser (kal / parso / tarikh / STOP / paid) |
-| `app/bandit.py` | Thompson Sampling channel selector (WhatsApp/SMS/Email/Voice) |
+| `app/bandit.py` | UCB1 bandit channel selector (WhatsApp/SMS/Email/Voice) |
 | `app/portfolio.py` | 0/1 knapsack portfolio optimizer for human-review capacity |
 | `app/recovery_model.py` | HistGradientBoosting classifier + SHAP per-case explanations |
 | **Data & measurement** | |
@@ -383,7 +383,7 @@ The dashboard is a **React 18 app** (vendored scripts, no CDN dependency, no bui
 | `scripts/demo_ml.py` | ML model training + SHAP explainability demo |
 | `scripts/demo_portfolio.py` | 0/1 knapsack vs greedy portfolio optimization |
 | `docs/dashboard.png` | Live screenshot of the report dashboard |
-| `docs/adr/` | Architecture Decision Records (SQLite, Thompson Sampling, control groups, SHAP, rule-first) |
+| `docs/adr/` | Architecture Decision Records (SQLite, UCB1 bandit, control groups, SHAP, rule-first) |
 | `COMPLIANCE.md` | Messaging compliance + data handling, claim-by-claim |
 | `DEPLOYMENT_CHECKLIST.md` | Pre-production verification, every item with its check |
 | `FUTURE_ROADMAP.md` | Vulcan integration story — layers, seams, honest caveats |
