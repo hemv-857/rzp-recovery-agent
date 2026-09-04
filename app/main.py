@@ -643,10 +643,12 @@ def llm_diagnose(payload: dict[str, Any]) -> dict[str, Any]:
     from .llm_client import get_groq_client
     gc = get_groq_client()
     if not gc.available():
+        import os
+        key = os.getenv("GROQ_API_KEY")
         return {
             "diagnosis": "llm_unavailable",
             "confidence": 0.0,
-            "reasoning": "GROQ_API_KEY not set",
+            "reasoning": f"GROQ_API_KEY not set (raw={key!r}, len={len(key) if key else 0})",
         }
     return gc.diagnose(payload)
 
