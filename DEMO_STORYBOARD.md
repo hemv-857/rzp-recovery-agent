@@ -79,35 +79,19 @@ chained, can't be faked after the fact."
 
 **Run through a case:**
 
-"So let's walk through one case.
+"Let's walk through one case.
 
-A customer tries to pay ₹1,500 with their card. It fails — insufficient
-funds.
+Customer tries to pay ₹1,500. Card fails — insufficient funds.
+Classifier: 97% confidence. Selector picks WhatsApp — bandit
+learned it has the highest recovery rate for this type.
 
-The classifier picks it up. INSUFFICIENT_FUNDS, 97% confidence.
-It knows this is someone who'll probably get paid in a few days.
+Policy gate checks: quiet hours? No. First attempt? Yes. Under ₹25K?
+Yes. Message goes out. Here's the preview — character count,
+button layout, what the customer actually sees.
 
-Now the selector picks WhatsApp. The UCB1 bandit learned that
-WhatsApp works best for this type of failure — higher open rates
-than SMS or email in India.
-
-The policy gate checks — is it quiet hours? No. First attempt? Yes.
-Under ₹25K? Yes. All clear, message goes out.
-
-Here's the WhatsApp preview — you can see the character count,
-the button layout, everything before it hits the customer.
-
-Now the customer replies. 'Kal pakka' — basically 'tomorrow for sure.'
-The Hinglish parser catches that. It's a promise. The system pauses
-the follow-up ladder and schedules the next attempt for salary day.
-
-CUSUM is watching the recovery rate in the background. If it drops,
-we get an alert.
-
-A few days later, payment comes in. Case closed. And the whole chain
-is logged — nine events, every step traceable. You can pull up the
-decision inspector and see the EV calculations, the alternatives
-that were rejected, everything."
+Customer replies 'kal pakka.' Parser catches it, tracks the promise,
+pauses the follow-up ladder. Few days later, payment comes in.
+Case closed. Nine events logged, every step traceable."
 
 ---
 
