@@ -1,6 +1,6 @@
 """
 Razorpay webhook ingestion & payment link generation.
-Foura: <12ms synchronous placeholder + background LLM diagnosis.
+<12ms synchronous placeholder + background LLM diagnosis.
 """
 from __future__ import annotations
 

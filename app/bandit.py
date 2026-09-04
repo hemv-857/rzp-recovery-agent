@@ -1,6 +1,6 @@
 """Multi-armed bandit channel selection using UCB1 (Upper Confidence Bound).
 
-Foura pattern: UCB1 balances exploration vs exploitation mathematically.
+UCB1 balances exploration vs exploitation mathematically.
 Score = mean_recovery + c * sqrt(2 * ln(total_pulls) / arm_pulls)
 
 This provides deterministic, explainable exploration — no random sampling.
@@ -70,7 +70,7 @@ class ChannelBandit:
         for ch, arm in eligible.items():
             base_score = arm.ucb_score(total_pulls, self.exploration_constant)
 
-            # Contextual bias (Foura: different channels work better for different failures)
+            # Contextual bias: different channels work better for different failures
             if context:
                 bias = self._contextual_bias(ch, context)
                 base_score *= (1 + bias)
@@ -84,7 +84,7 @@ class ChannelBandit:
         fc = context.get("failure_class", "").upper()
         amount = context.get("amount_paise", 0)
 
-        # Foura-inspired heuristics
+        # Heuristic biases by channel and failure class
         biases = {
             "whatsapp": {
                 "INSUFFICIENT_FUNDS": 0.15,

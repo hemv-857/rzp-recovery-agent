@@ -1,6 +1,6 @@
 """
 WhatsApp concierge message templates & preview.
-Foura: real-time preview of exact WhatsApp message + 1-click Razorpay link.
+Real-time preview of exact WhatsApp message + 1-click Razorpay link.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def build_recovery_message(
 ) -> WhatsAppMessage:
     """Build personalized recovery nudge with payment link."""
 
-    # Foura: empathetic, specific, actionable
+    # Empathetic, specific, actionable
     templates = {
         "INSUFFICIENT_FUNDS": (
             f"Hi {customer_name}, your payment of {amount_display}"

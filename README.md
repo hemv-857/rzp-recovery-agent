@@ -117,7 +117,7 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
 13. **WebSocket live replay.** `WS /ws/replay` streams per-case events as JSON
      so the React dashboard can update in real-time without polling.
 
-## Foura-Level Upgrades
+## Advanced Features
 
 14. **Webhook ingestion + background LLM diagnosis.** `POST /webhook/razorpay`
      receives Razorpay webhooks with <12ms sync response, then runs Groq LLaMA-3

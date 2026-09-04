@@ -68,7 +68,7 @@ _STATIC = Path(__file__).parent / "static"
 if _STATIC.is_dir():
     app.mount("/static", StaticFiles(directory=_STATIC), name="static")
 
-# Foura-level: Razorpay webhook ingestion
+# Razorpay webhook ingestion
 from .webhook import router as webhook_router  # noqa: E402
 
 app.include_router(webhook_router)
@@ -582,7 +582,7 @@ def roi_calculator(
     }
 
 
-# --- WhatsApp preview (Foura-style) ---
+# --- WhatsApp preview ---
 @app.get("/preview/whatsapp", tags=["tools"])
 def whatsapp_preview(
     failure_class: str = "INSUFFICIENT_FUNDS",
@@ -610,7 +610,7 @@ def whatsapp_preview(
     }
 
 
-# --- Currency conversion (Foura multi-currency) ---
+# --- Currency conversion ---
 @app.get("/currency/convert", tags=["tools"])
 def currency_convert(
     amount_paise: int,
@@ -636,7 +636,7 @@ def currency_convert(
     }
 
 
-# --- LLM diagnosis (Foura cognitive layer) ---
+# --- LLM diagnosis ---
 @app.post("/diagnose", tags=["tools"])
 def llm_diagnose(payload: dict[str, Any]) -> dict[str, Any]:
     """Run LLaMA-3 root-cause diagnosis on failure context."""

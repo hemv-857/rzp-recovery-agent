@@ -1,6 +1,6 @@
 """
 Groq LLaMA-3 client for root-cause diagnosis.
-Foura pattern: deterministic sandwich — LLM only in cognitive layer.
+Deterministic sandwich — LLM only in cognitive layer.
 """
 import json
 import logging
