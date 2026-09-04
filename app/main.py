@@ -807,9 +807,16 @@ def recent_cases(limit: int = 25) -> dict[str, Any]:
         "case_id": c.case_id,
         "failure_class": c.failure_class.value,
         "amount_paise": c.amount,
+        "method": c.method,
         "status": c.status.value,
-        "written_off_reason": c.written_off_reason,
+        "group": c.group.value,
         "recovered_amount_paise": c.recovered_amount,
+        "written_off_reason": c.written_off_reason,
+        "customer": {
+            "name": c.customer.name,
+            "phone": c.customer.phone,
+            "opted_out": c.customer.opted_out,
+        },
     } for c in cases]}
 
 

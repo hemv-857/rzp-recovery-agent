@@ -575,7 +575,7 @@
                                 <div className="grid-4" style={{gap:6}}>
                                     <div><span className="form-label">Method</span><div className="mono" style={{fontSize:11}}>{c.method||"—"}</div></div>
                                     <div><span className="form-label">Group</span><div style={{fontSize:11,color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group||"—"}</div></div>
-                                    <div><span className="form-label">Customer</span><div style={{fontSize:11}}>{c.customer||"—"}</div></div>
+                                    <div><span className="form-label">Customer</span><div style={{fontSize:11}}>{(c.customer?.name)||"—"}</div></div>
                                     <div><span className="form-label">Actions</span><button className="btn btn-xs" onClick={e=>{e.stopPropagation();onCaseClick(c.case_id)}}>Audit Trail</button></div>
                                 </div>
                             </td></tr>}
