@@ -777,11 +777,11 @@
                             </div>
                             <button className="btn btn-sm" onClick={loadWaPreview} style={{marginBottom:12}}>Load Preview</button>
                             {waMsg&&<div className="wa-bubble">
-                                {waMsg.header&&<div className="wa-header">{waMsg.header.text||waMsg.header}</div>}
-                                <div>{waMsg.body}</div>
+                                {waMsg.header&&<div className="wa-header">{typeof waMsg.header==="string"?waMsg.header:waMsg.header.text||""}</div>}
+                                <div>{waMsg.body||""}</div>
                                 {waMsg.footer&&<div className="wa-footer">{waMsg.footer}</div>}
-                                {waMsg.buttons&&<div>{waMsg.buttons.map((b,i)=><span key={i} className={`wa-btn ${b.type==="url"?"primary":"secondary"}`}>{b.text}</span>)}</div>}
-                                <div style={{fontSize:9,color:"var(--dim)",marginTop:8}}>{waMsg.character_count} chars · {waMsg.within_limit?"✅ within limit":"⚠️ exceeds"}</div>
+                                {Array.isArray(waMsg.buttons)&&waMsg.buttons.map((b,i)=><span key={i} className={`wa-btn ${b.type==="url"?"primary":"secondary"}`}>{b.text||""}</span>)}
+                                <div style={{fontSize:9,color:"var(--dim)",marginTop:8}}>{waMsg.character_count||0} chars · {waMsg.within_limit?"✅ within limit":"⚠️ exceeds"}</div>
                             </div>}
                         </div>
                     </div>
