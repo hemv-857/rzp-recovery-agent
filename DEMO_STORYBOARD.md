@@ -1,6 +1,21 @@
 # Demo Storyboard
 
-## [0:00–0:20] What This Is
+## [0:00–0:15] Intro
+
+**Screen:** Your face (camera on)
+
+**Say this:**
+
+"Hi, I'm Hemang. I'm a software engineer, and I've been thinking
+about this problem for a while: how do you know if your revenue
+recovery system actually works?
+
+Most tools report gross numbers. I wanted to measure incremental
+lift. This is what I built."
+
+---
+
+## [0:15–0:35] What This Is
 
 **Screen:** README — top section
 
@@ -20,7 +35,7 @@ reproducible."
 
 ---
 
-## [0:20–0:50] How It Works
+## [0:35–1:10] How It Works
 
 **Screen:** Architecture diagram in README
 
@@ -37,21 +52,27 @@ classifier → selector → policy gate → executor
 Classifier maps error codes to failure types — 9 in this batch, 15 defined.
 Each type gets a different strategy — insufficient funds retries on salary
 day, hard declines send alternate payment links, invoice overdue
-escalates to humans.
+escalates to humans. Every prediction carries SHAP explainability —
+you can see exactly which features drove the classification.
 
 Selector picks the best channel — WhatsApp, SMS, email, voice —
-using a UCB1 bandit that learns which channel works for which
-failure type.
+using a UCB1 bandit with contextual bias for failure class and
+amount tier. The bandit learns from each recovery. Live scores
+visible in the dashboard.
 
-Policy gate is pure functions. Quiet hours, attempt caps, opt-outs,
-human approval above 25K. Deterministic, testable, no side effects.
+Policy gate is pure functions. Quiet hours in IST, attempt caps,
+cooldowns, opt-out registry, human approval above ₹25K, case expiry.
+Deterministic, testable, no side effects. Every block is audit-logged
+with a reason.
 
-Executor sends the message. Audit trail records every decision.
-Append-only. Can't be faked after the fact."
+Executor sends via the channel selector. Webhook ingestion handles
+Razorpay events in under 12 milliseconds sync, then runs background
+diagnosis. Audit trail records every decision — append-only, SHA-256
+chained, can't be faked after the fact."
 
 ---
 
-## [0:50–1:30] Live Walkthrough
+## [1:10–1:50] Live Walkthrough
 
 **Screen:** Dashboard + terminal side by side
 
@@ -67,16 +88,22 @@ recovery rate for this failure type.
 Policy gate: pass. Not quiet hours. First attempt. Under ₹25K
 approval threshold.
 
-Message sent. Customer replies 'kal pakka' — Hinglish parser
-catches it. Promise tracked. Ladder pauses. Follow-up scheduled
-for next salary day.
+Message sent. The WhatsApp concierge template renders a live preview —
+character count, button layout, 1024-char limit check. You can see
+exactly what the customer gets before sending.
+
+Customer replies 'kal pakka' — Hinglish parser catches it. Promise
+tracked. Ladder pauses. Follow-up scheduled for next salary day.
+CUSUM change-point detector monitors the recovery rate — if it
+drops, the system alerts.
 
 Payment comes in. Case closed. Full reasoning chain logged —
-nine events, every step traceable."
+nine events, every step traceable. The decision inspector shows
+EV calculations and rejected alternatives for every action."
 
 ---
 
-## [1:30–2:15] The Numbers
+## [1:50–2:40] The Numbers
 
 **Screen:** Dashboard hero section
 
@@ -93,7 +120,9 @@ replications, seeded for reproducibility.
 ₹67.72 crore incremental recovery.
 
 Cost: ₹78,000 in contact spend. That's ₹113 per incremental
-recovery.
+recovery. The ROI calculator lets merchants plug in their own
+numbers — amount at risk, baseline recovery, estimated lift —
+and get projected incremental recovery with every assumption stated.
 
 279 promises captured through Hinglish parsing. 59% keep rate.
 ₹18.83 crore recovered through promises.
@@ -101,11 +130,15 @@ recovery.
 21 customers opted out. All honored. Zero silent failures.
 
 And the number we report honestly: 30% of recovered customers
-would have paid anyway. We count that as a cost, not a win."
+would have paid anyway. We count that as a cost, not a win.
+
+The recovery funnel shows where cases drop off — 148 ingested,
+194 eligible, 106 recovered. Drop-off reasons tracked: promise
+paused, retries exceeded, case expiry."
 
 ---
 
-## [2:15–2:45] Per-Class Strategy
+## [2:40–3:10] Per-Class Strategy
 
 **Screen:** Dashboard — scroll to per-class breakdown
 
@@ -117,24 +150,29 @@ Insufficient funds: 79.7% treatment vs 28.8% control. Salary-cycle
 retries work — people get paid on the 1st and 5th.
 
 Hard decline: 37.8% vs 9.5%. Never re-charge the same card.
-Send an alternate link instead.
+Send an alternate link instead. The classifier knows this is
+a compliance boundary.
 
 Invoice overdue: 73.2% vs 6.2%. Highest lift. Because these
-escalate to humans — phone calls, not just messages.
+escalate to humans — voice calls with Hinglish TTS scripts,
+payment link sent by SMS in parallel. The voice provider
+interface is pluggable — mock for demo, real BSP in production.
 
 One size doesn't fit all. The classifier determines the strategy.
-The strategy determines the outcome."
+The strategy determines the outcome. Portfolio optimization
+selects the best subset of cases for human-review capacity
+using 0/1 knapsack DP."
 
 ---
 
-## [2:45–3:15] What We Learned
+## [3:10–3:40] What We Learned
 
 **Screen:** Just talk, or show code if you want
 
 **Tell this story:**
 
 "First version sent every failure to an LLM for classification.
-Seemed like the right thing to do.
+Groq LLaMA-3. Seemed like the right thing to do.
 
 Then we measured. 400 milliseconds per case. Fifteen paise each.
 Two thousand cases — three hundred rupees. And the LLM gave
@@ -144,14 +182,16 @@ We tried rules instead. Same accuracy. Five milliseconds. Zero cost.
 
 So we kept the LLM for edge cases only — the 5% of unusual error
 texts that rules can't parse. Now the whole system costs ten rupees
-instead of three hundred.
+instead of three hundred. Provider switching in the dashboard
+toggles between mock, Ollama, and Claude — you can test each
+provider live.
 
 The lesson: measure the tradeoff. Don't assume AI is better.
 Sometimes rules are. We proved it."
 
 ---
 
-## [3:15–3:45] Future: Vulcan Integration
+## [3:40–4:10] Future: Vulcan Integration
 
 **Screen:** README or diagram
 
@@ -170,19 +210,22 @@ did Layer 2 work.
 When Razorpay exposes Vulcan signals through their API, the
 classifier already has a pluggable interface. We drop in Vulcan's
 richer failure reasons. Everything downstream — selector, policy
-gate, audit trail — stays the same.
+gate, audit trail — stays the same. The Vulcan adapter is already
+in the codebase, waiting.
 
 We built the integration seam before we needed it."
 
 ---
 
-## [3:45–4:15] Compliance and Audit
+## [4:10–4:50] Compliance and Security
 
-**Screen:** Case detail modal — audit trail
+**Screen:** Security tab + case audit trail
 
 **Say this:**
 
-"Every case has an immutable audit trail.
+"Every case has an immutable audit trail. SHA-256 chained —
+you can verify the chain hasn't been tampered with from the
+dashboard.
 
 webhook received → classified → policy verdict → strategy selected →
 message sent → customer replied → promise tracked → follow-up
@@ -193,11 +236,17 @@ In production, this is how you pass audits.
 
 Policy gate blocks are logged with reasons. Opt-outs are honored.
 Quiet hours are enforced. Human approval required above ₹25K.
-No silent failures."
+No silent failures.
+
+Security posture: threat model with mitigations, adversarial
+LLM testing — prompt injection attempts are classified as
+UNKNOWN with low confidence. The LLM has no tool access, no
+credentials, no PII. Every money action requires compliance
+gate pass."
 
 ---
 
-## [4:15–4:30] Close
+## [4:50–5:00] Close
 
 **Screen:** Back to dashboard hero
 
@@ -216,11 +265,35 @@ The control group is real."
 
 ## Notes
 
-- **Total time:** ~4:30
+- **Total time:** ~5:00
 - **Tone:** Direct, technical, no hype. Let the numbers speak.
 - **Pacing:** Slow during numbers. Fast during architecture.
 - **The 30% line.** Say it, pause. That's the credibility moment.
 - **Vulcan section.** Don't oversell. "Built the seam before we needed it" is enough.
+
+## Features Mentioned
+
+| Feature | Where | How |
+|---------|-------|-----|
+| SHAP explainability | Architecture | "Every prediction carries SHAP" |
+| UCB1 bandit | Architecture + Walkthrough | "Contextual bias, live scores" |
+| Webhook ingestion | Architecture | "<12ms sync, background diagnosis" |
+| Audit trail (SHA-256) | Architecture + Security | "Append-only, chained, verifiable" |
+| WhatsApp concierge | Walkthrough | "Live preview, character count" |
+| CUSUM detector | Walkthrough | "Monitors recovery rate" |
+| Decision inspector | Walkthrough | "EV calculations, rejected alternatives" |
+| ROI calculator | Numbers | "Merchants plug in own numbers" |
+| Recovery funnel | Numbers | "Drop-off tracking" |
+| Promise-to-pay | Numbers + Walkthrough | "Hinglish parsing, keep rate" |
+| Voice TTS | Per-class | "Hinglish scripts, pluggable provider" |
+| Portfolio optimization | Per-class | "Knapsack DP for human capacity" |
+| Provider switching | What We Learned | "Mock, Ollama, Claude toggle" |
+| Vulcan adapter | Future | "Pluggable interface, already in codebase" |
+| Adversarial testing | Security | "Prompt injection → UNKNOWN" |
+| Multi-currency | Q&A | "USD, EUR, INR with live rates" |
+| Auto-pilot | (dashboard visible) | Topbar toggle |
+| Settings editor | (dashboard visible) | Engine tab |
+| Approval queue | Numbers | "21 opt-outs honored" |
 
 ## Q&A Prep
 
