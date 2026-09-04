@@ -6,9 +6,10 @@
 
 **Say this:**
 
-"Hi, I'm Hemang. I'm a software engineer, and I've been thinking
-about this problem for a while: how do you know if your revenue
-recovery system actually works?
+"Hi, I'm Hemang. I'm a second-year student at the Faculty of
+Technology, University of Delhi. I've been thinking about this
+problem for a while: how do you know if your revenue recovery
+system actually works?
 
 Most tools report gross numbers. I wanted to measure incremental
 lift. This is what I built."
