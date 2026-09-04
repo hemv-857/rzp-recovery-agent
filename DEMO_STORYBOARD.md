@@ -34,9 +34,9 @@ classifier → selector → policy gate → executor
 
 "The pipeline is five stages.
 
-Classifier maps error codes to 15 failure types. Each type gets a
-different strategy — insufficient funds retries on salary day,
-hard declines send alternate payment links, invoice overdue
+Classifier maps error codes to failure types — 9 in this batch, 15 defined.
+Each type gets a different strategy — insufficient funds retries on salary
+day, hard declines send alternate payment links, invoice overdue
 escalates to humans.
 
 Selector picks the best channel — WhatsApp, SMS, email, voice —
