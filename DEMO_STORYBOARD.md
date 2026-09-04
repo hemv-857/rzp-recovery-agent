@@ -79,28 +79,35 @@ chained, can't be faked after the fact."
 
 **Run through a case:**
 
-"Payment fails — ₹1,500, card, insufficient funds.
+"So let's walk through one case.
 
-Classifier: INSUFFICIENT_FUNDS, confidence 0.97.
+A customer tries to pay ₹1,500 with their card. It fails — insufficient
+funds.
 
-Selector: WhatsApp. UCB1 chose it because WhatsApp has the highest
-recovery rate for this failure type.
+The classifier picks it up. INSUFFICIENT_FUNDS, 97% confidence.
+It knows this is someone who'll probably get paid in a few days.
 
-Policy gate: pass. Not quiet hours. First attempt. Under ₹25K
-approval threshold.
+Now the selector picks WhatsApp. The UCB1 bandit learned that
+WhatsApp works best for this type of failure — higher open rates
+than SMS or email in India.
 
-Message sent. The WhatsApp concierge template renders a live preview —
-character count, button layout, 1024-char limit check. You can see
-exactly what the customer gets before sending.
+The policy gate checks — is it quiet hours? No. First attempt? Yes.
+Under ₹25K? Yes. All clear, message goes out.
 
-Customer replies 'kal pakka' — Hinglish parser catches it. Promise
-tracked. Ladder pauses. Follow-up scheduled for next salary day.
-CUSUM change-point detector monitors the recovery rate — if it
-drops, the system alerts.
+Here's the WhatsApp preview — you can see the character count,
+the button layout, everything before it hits the customer.
 
-Payment comes in. Case closed. Full reasoning chain logged —
-nine events, every step traceable. The decision inspector shows
-EV calculations and rejected alternatives for every action."
+Now the customer replies. 'Kal pakka' — basically 'tomorrow for sure.'
+The Hinglish parser catches that. It's a promise. The system pauses
+the follow-up ladder and schedules the next attempt for salary day.
+
+CUSUM is watching the recovery rate in the background. If it drops,
+we get an alert.
+
+A few days later, payment comes in. Case closed. And the whole chain
+is logged — nine events, every step traceable. You can pull up the
+decision inspector and see the EV calculations, the alternatives
+that were rejected, everything."
 
 ---
 
