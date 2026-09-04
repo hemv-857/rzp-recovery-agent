@@ -952,18 +952,19 @@
                             <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5}}><div className="form-label">Status</div><span className={`pill ${detail.case?.status}`}>{detail.case?.status?.replace(/_/g," ")}</span></div>
                         </div>
 
-                        {/* Decision Inspector */}
+                         {/* Decision Inspector */}
                         {decision&&<div style={{border:"1px solid var(--bdr)",borderRadius:8,padding:12,marginBottom:14,background:"rgba(255,255,255,.02)"}}>
                             <div style={{fontSize:11,fontWeight:700,marginBottom:8}}>🧠 Decision Inspector</div>
                             <div className="grid-3" style={{gap:6,marginBottom:8}}>
-                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">EV (Selected)</div><div className="mono" style={{fontSize:12,fontWeight:700,color:"var(--grn)"}}>{decision.selected?.ev?.toFixed(3)||"—"}</div></div>
-                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Confidence</div><div className="mono" style={{fontSize:12,fontWeight:700}}>{decision.selected?.confidence?.toFixed(2)||"—"}</div></div>
-                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Reason</div><div style={{fontSize:10}}>{decision.selected?.why||"—"}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Selected Action</div><div className="mono" style={{fontSize:12,fontWeight:700,color:"var(--grn)"}}>{decision.selected_action||"—"}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Failure Class</div><div className="mono" style={{fontSize:12,fontWeight:700}}>{decision.failure_class||"—"}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Amount</div><div className="mono" style={{fontSize:12,fontWeight:700}}>{decision.amount_paise?`₹${(decision.amount_paise/100).toLocaleString()}`:"—"}</div></div>
                             </div>
-                            {decision.rejected&&decision.rejected.length>0&&<div>
-                                <div style={{fontSize:9,color:"var(--dim)",marginBottom:4,textTransform:"uppercase",letterSpacing:".04em"}}>Rejected alternatives</div>
-                                {decision.rejected.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:10}}>
-                                    <span>{r.action}</span><span className="mono" style={{color:"var(--dim)"}}>EV: {r.ev?.toFixed(3)}</span>
+                            {decision.selected_reasoning&&<div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,marginBottom:8,fontSize:10}}><span style={{fontWeight:700}}>Why: </span>{decision.selected_reasoning.reason||JSON.stringify(decision.selected_reasoning)}</div>}
+                            {decision.alternatives&&decision.alternatives.length>0&&<div>
+                                <div style={{fontSize:9,color:"var(--dim)",marginBottom:4,textTransform:"uppercase",letterSpacing:".04em"}}>Alternatives ({decision.alternatives.length})</div>
+                                {decision.alternatives.filter(a=>!a.selected).slice(0,5).map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:10}}>
+                                    <span>{r.action}</span><span className="mono" style={{color:"var(--dim)"}}>net EV: ₹{r.net_ev_paise}</span><span style={{fontSize:9,color:r.rejected_reason?"var(--red)":"var(--dim)"}}>{r.rejected_reason||""}</span>
                                 </div>)}
                             </div>}
                         </div>}

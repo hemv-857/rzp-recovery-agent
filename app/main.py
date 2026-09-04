@@ -838,65 +838,45 @@ def recovery_funnel() -> dict[str, Any]:
 
     Stages: Failed Events -> Policy-Eligible -> Interventions Attempted -> Settled Recoveries
     Drop-offs: Retries Exceeded, Awaiting Approval, Active Promise Paused, Negative-EV Skipped
-    Mirrors modiviveks' recovery funnel.
     """
     store = _store()
     cases = store.all_cases()
     actions = store.actions_rows()
 
-    len(cases)
     treatment_cases = [c for c in cases if c.group.value == "treatment"]
 
     # Stage 1: Failed Events (treatment only)
     stage1 = len(treatment_cases)
 
-    # Stage 2: Policy-Eligible (not blocked by opt-out, cap, expiry, etc.)
-    from .policy import Decision, evaluate
-    cfg = _cfg()
-    now = datetime.now(timezone.utc)
-    eligible = 0
-    drop_retry_exceeded = 0
-    drop_opt_out = 0
-    drop_expiry = 0
-    for c in treatment_cases:
-        gate = evaluate(c, now, cfg, action_is_contact=True, money_action=False, now=now)
-        if gate.decision is Decision.BLOCK:
-            if "attempt_cap" in gate.reason:
-                drop_retry_exceeded += 1
-            elif "opt_out" in gate.reason:
-                drop_opt_out += 1
-            elif "expiry" in gate.reason:
-                drop_expiry += 1
-        else:
-            eligible += 1
-
-    # Stage 3: Interventions Attempted (executed actions)
+    # Stage 2: Policy-Eligible — cases that got at least one executed action
     executed_actions = [a for a in actions if a.get("status") == "executed"]
-    # Count unique cases with executed actions
-    cases_with_executed = {a.get("case_id") for a in executed_actions}
-    stage3 = len(cases_with_executed)
+    blocked_actions = [a for a in actions if a.get("status") == "blocked"]
+    # Eligible = had at least one executed action (wasn't fully blocked)
+    eligible_cases = {a.get("case_id") for a in executed_actions}
+    stage2 = len(eligible_cases)
 
-    # Drop-offs at Stage 2->3
-    drop_awaiting_approval = 0
-    drop_promise_paused = 0
-    drop_negative_ev = 0
-    for c in treatment_cases:
-        gate = evaluate(c, now, cfg, action_is_contact=True, money_action=False, now=now)
-        if gate.decision is Decision.DEFER:
-            if "approval" in gate.reason:
-                drop_awaiting_approval += 1
-            elif "quiet_hours" in gate.reason:
-                pass  # just deferred, not dropped
-            else:
+    # Stage 3: Interventions Attempted (unique cases with executed actions)
+    stage3 = stage2
+
+    # Drop-offs from blocked actions
+    blocked_reasons: dict[str, int] = {}
+    for a in blocked_actions:
+        reason = "unknown"
+        data = a.get("action_data")
+        if data:
+            try:
+                import json as _json
+                parsed = _json.loads(data)
+                reason = parsed.get("blocked_reason", "unknown")
+            except Exception:
                 pass
-        # Check for promise
-        if c.promised_at and not c.recovered_amount:
-            drop_promise_paused += 1
-        # Check negative EV
-        from .selector import select_next_action
-        nxt = select_next_action(c, cfg, now)
-        if nxt is None:
-            drop_negative_ev += 1
+        blocked_reasons[reason] = blocked_reasons.get(reason, 0) + 1
+
+    # Promise-paused cases (have promise but not yet recovered)
+    promise_paused = sum(
+        1 for c in treatment_cases
+        if c.promised_at and not c.recovered_amount
+    )
 
     # Stage 4: Settled Recoveries
     recovered_cases = [c for c in treatment_cases if c.recovered_amount > 0]
@@ -905,21 +885,14 @@ def recovery_funnel() -> dict[str, Any]:
     return {
         "stages": [
             {"name": "Failed Events", "count": stage1, "label": "payment.failed ingested"},
-            {"name": "Policy Eligible", "count": eligible, "label": "passed compliance gate"},
+            {"name": "Policy Eligible", "count": stage2, "label": "passed compliance gate"},
             {"name": "Interventions Attempted", "count": stage3, "label": "actions executed"},
             {"name": "Settled Recoveries", "count": stage4, "label": "verified recovered"},
         ],
-        "drop_offs": {
-            "retries_exceeded": drop_retry_exceeded,
-            "opt_out": drop_opt_out,
-            "case_expiry": drop_expiry,
-            "awaiting_approval": drop_awaiting_approval,
-            "promise_paused": drop_promise_paused,
-            "negative_ev": drop_negative_ev,
-        },
+        "drop_offs": blocked_reasons | {"promise_paused": promise_paused},
         "conversion_rates": {
-            "eligible_rate": round(eligible / max(stage1, 1), 4),
-            "execution_rate": round(stage3 / max(eligible, 1), 4),
+            "eligible_rate": round(stage2 / max(stage1, 1), 4),
+            "execution_rate": round(stage3 / max(stage2, 1), 4),
             "recovery_rate": round(stage4 / max(stage3, 1), 4),
             "overall_rate": round(stage4 / max(stage1, 1), 4),
         },
