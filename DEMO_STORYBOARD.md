@@ -125,9 +125,12 @@ paused, retries exceeded, case expiry."
 **Say this:**
 
 "Different failures, different strategies. Insufficient funds —
-salary-cycle retries. Hard decline — never re-charge, send an
-alternate link. Invoice overdue — escalate to humans, highest
-lift. The classifier picks the strategy. The strategy determines
+salary-cycle retries work because people get paid on the 1st and 5th.
+Hard decline — never re-charge the same card, send an alternate
+payment link instead. Invoice overdue — escalate to humans, phone
+calls work better than messages here. Highest lift of any class.
+
+The classifier picks the strategy. The strategy determines
 the outcome."
 
 ---
