@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LLMConfig:
-    model: str = "llama-3.3-70b-versatile"
+    model: str = "qwen/qwen3.8-27b"
     temperature: float = 0.1
     max_tokens: int = 512
     timeout: int = 5  # seconds
