@@ -128,6 +128,6 @@ _client = None
 
 def get_groq_client() -> GroqClient:
     global _client
-    if _client is None:
+    if _client is None or not _client.available():
         _client = GroqClient()
     return _client
