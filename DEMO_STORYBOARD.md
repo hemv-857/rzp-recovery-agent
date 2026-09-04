@@ -48,28 +48,16 @@ classifier → selector → policy gate → executor
 
 **Say this:**
 
-"The pipeline is five stages.
+"Five stages. Classifier maps error codes to failure types and picks
+a strategy — retry on salary day, send an alternate link, escalate
+to humans. Selector picks the channel — WhatsApp, SMS, email, voice —
+using a UCB1 bandit that learns what works.
 
-Classifier maps error codes to failure types — 9 in this batch, 15 defined.
-Each type gets a different strategy — insufficient funds retries on salary
-day, hard declines send alternate payment links, invoice overdue
-escalates to humans. Every prediction carries SHAP explainability —
-you can see exactly which features drove the classification.
+Policy gate is pure functions — quiet hours, attempt caps, opt-outs,
+human approval above ₹25K. Deterministic, testable, no side effects.
 
-Selector picks the best channel — WhatsApp, SMS, email, voice —
-using a UCB1 bandit with contextual bias for failure class and
-amount tier. The bandit learns from each recovery. Live scores
-visible in the dashboard.
-
-Policy gate is pure functions. Quiet hours in IST, attempt caps,
-cooldowns, opt-out registry, human approval above ₹25K, case expiry.
-Deterministic, testable, no side effects. Every block is audit-logged
-with a reason.
-
-Executor sends via the channel selector. Webhook ingestion handles
-Razorpay events in under 12 milliseconds sync, then runs background
-diagnosis. Audit trail records every decision — append-only, SHA-256
-chained, can't be faked after the fact."
+Executor sends. Audit trail records every decision — append-only,
+SHA-256 chained, can't be faked."
 
 ---
 
