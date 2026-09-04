@@ -20,6 +20,11 @@
     { "source": "/docs", "destination": "https://rzp-recovery-agent.onrender.com/docs" },
     { "source": "/openapi.json", "destination": "https://rzp-recovery-agent.onrender.com/openapi.json" },
     { "source": "/ws/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/ws/$1" },
-    { "source": "/audit/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/audit/$1" }
+    { "source": "/audit/(.*)", "destination": "https://rzp-recovery-agent.onrender.com/audit/$1" },
+    { "source": "/preview/whatsapp(.*)", "destination": "https://rzp-recovery-agent.onrender.com/preview/whatsapp$1" },
+    { "source": "/currency/convert(.*)", "destination": "https://rzp-recovery-agent.onrender.com/currency/convert$1" },
+    { "source": "/diagnose(.*)", "destination": "https://rzp-recovery-agent.onrender.com/diagnose$1" },
+    { "source": "/provider(.*)", "destination": "https://rzp-recovery-agent.onrender.com/provider$1" },
+    { "source": "/settings(.*)", "destination": "https://rzp-recovery-agent.onrender.com/settings$1" }
   ]
 }

@@ -26,7 +26,7 @@ revenue at risk ──▶ classifier ──▶ case ──▶ selector ──▶
 | **[rzp-recovery-agent.vercel.app](https://rzp-recovery-agent.vercel.app)** | React dashboard (API proxied via Vercel rewrites) |
 | **[rzp-recovery-agent.onrender.com](https://rzp-recovery-agent.onrender.com)** | FastAPI backend + API docs at `/docs` |
 
-Dashboard features: animated hero with incremental lift, treatment vs control bars, spend doughnut, per-class recovery chart, security posture, Thompson Sampling bandit, live WebSocket replay, ROI calculator modal, audit trail drill-down.
+Dashboard features: 5-tab layout (Hub, Ledger, Engine, Tools, Security), animated hero with incremental lift, recovery funnel, approval queue, live bandit/cusum/budget data, UCB1 bandit display, checkout simulator with 4-step stepper, ROI calculator, WhatsApp preview, currency converter, LLaMA-3 diagnosis, provider switching, settings editor, threat model, audit chain verification, adversarial testing, search/filter on case ledger, auto-pilot mode, `Cmd+R` keyboard shortcut, skeleton loading, confetti + audio on recovery.
 
 ## Judge Run — 5 minutes, no keys
 
@@ -116,6 +116,39 @@ trail. Details: [`scripts/demo.py`](scripts/demo.py).
      Three tiers: SHAP → model feature_importances_ → rule fallback.
 13. **WebSocket live replay.** `WS /ws/replay` streams per-case events as JSON
      so the React dashboard can update in real-time without polling.
+
+## Foura-Level Upgrades
+
+14. **Webhook ingestion + background LLM diagnosis.** `POST /webhook/razorpay`
+     receives Razorpay webhooks with <12ms sync response, then runs Groq LLaMA-3
+     root-cause diagnosis in the background. Fallback to deterministic rules when
+     `GROQ_API_KEY` is not set.
+15. **Multi-armed bandit (UCB1).** Replaces Thompson Sampling with Upper
+     Confidence Bound for faster convergence. Contextual bias for failure class
+     and amount tier. Live state displayed in the Engine tab.
+16. **Multi-currency support.** `GET /currency/convert` normalizes amounts across
+     USD, EUR, and INR with live rate caching. Currency selector in Tools tab.
+17. **WhatsApp concierge.** `GET /preview/whatsapp` renders a live WhatsApp
+     message preview with character count, button layout, and 1024-char limit
+     check. 4 template categories for different failure classes.
+18. **Provider switching.** Toggle between Mock (deterministic), Ollama (local),
+     and Claude (API) diagnosis providers from the dashboard Engine tab.
+19. **Settings editor.** Edit compliance rules (RBI retry cap, discount ceiling)
+     directly from the dashboard Engine tab.
+20. **Recovery funnel.** `GET /analytics/funnel` visualizes the 4-stage
+     recovery pipeline with drop-off percentages between stages.
+21. **Approval queue.** `GET /approval/queue` with approve/reject buttons
+     for high-value actions requiring human review.
+22. **Security posture.** Threat model with mitigations, SHA-256 audit chain
+     verification, adversarial LLM testing — all accessible from the Security
+     tab.
+23. **Decision inspector.** Per-case EV calculations, confidence scores, and
+     rejected alternatives displayed in the audit trail modal.
+24. **Auto-pilot mode.** Toggle continuous batch recovery from the topbar.
+25. **5-tab dashboard.** Hub (metrics + funnel), Case Ledger (search + export),
+     Engine (architecture + live bandit/cusum/budget + ROI calculator + settings),
+     Tools (WhatsApp + currency + LLM diagnose + provider switch),
+     Security (threat model + audit chain + adversarial test).
 
 ## Razorpay Integration
 
