@@ -12,175 +12,230 @@
     <style>
         :root{--bg:#0a0f1a;--card:rgba(255,255,255,.04);--card-hover:rgba(255,255,255,.07);--bdr:rgba(255,255,255,.08);--bdr-h:rgba(255,255,255,.15);--txt:#f1f5f9;--sec:#94a3b8;--dim:#64748b;--grn:#22c55e;--blu:#3b82f6;--pur:#a78bfa;--red:#ef4444;--yel:#eab308;--cyn:#06b6d4;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:var(--sans);background:var(--bg);color:var(--txt);min-height:100vh}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        body{font-family:var(--sans);background:var(--bg);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
         @keyframes slideR{from{width:0}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-        @keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+        @keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .a-fu{animation:fadeUp .5s ease both}.a-fi{animation:fadeIn .4s ease both}.a-sc{animation:scaleIn .4s ease both}
-        .d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}.d4{animation-delay:.2s}.d5{animation-delay:.25s}.d6{animation-delay:.3s}
+        @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        .a-fu{animation:fadeUp .45s ease both}.a-fi{animation:fadeIn .35s ease both}.a-sc{animation:scaleIn .35s ease both}.a-si{animation:slideIn .35s ease both}
+        .d1{animation-delay:.04s}.d2{animation-delay:.08s}.d3{animation-delay:.12s}.d4{animation-delay:.16s}.d5{animation-delay:.2s}.d6{animation-delay:.24s}
 
         /* Layout */
         .layout{display:flex;min-height:100vh}
-        .sidebar{width:220px;background:rgba(255,255,255,.02);border-right:1px solid var(--bdr);padding:20px 0;display:flex;flex-direction:column;position:fixed;height:100vh;overflow-y:auto;z-index:50}
-        .sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--bdr);margin-bottom:16px}
-        .sidebar-logo h1{font-size:16px;font-weight:800;letter-spacing:-.02em}
-        .sidebar-logo .sub{font-size:10px;color:var(--dim);margin-top:2px;letter-spacing:.04em}
-        .nav{padding:0 12px;flex:1}
-        .nav-section{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;padding:8px 12px;font-weight:700}
-        .nav-item{padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sec);transition:all .15s;display:flex;align-items:center;gap:10px;margin-bottom:2px}
+        .sidebar{width:210px;background:rgba(255,255,255,.02);border-right:1px solid var(--bdr);padding:18px 0;display:flex;flex-direction:column;position:fixed;height:100vh;overflow-y:auto;z-index:50}
+        .sidebar-logo{padding:0 18px 16px;border-bottom:1px solid var(--bdr);margin-bottom:12px}
+        .sidebar-logo h1{font-size:15px;font-weight:800;letter-spacing:-.02em}
+        .sidebar-logo .sub{font-size:9px;color:var(--dim);margin-top:2px;letter-spacing:.04em;text-transform:uppercase}
+        .nav{padding:0 10px;flex:1}
+        .nav-section{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;padding:10px 10px 4px;font-weight:700}
+        .nav-item{padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;color:var(--sec);transition:all .15s;display:flex;align-items:center;gap:9px;margin-bottom:1px;user-select:none}
         .nav-item:hover{background:rgba(255,255,255,.05);color:var(--txt)}
         .nav-item.active{background:rgba(59,130,246,.12);color:var(--blu);font-weight:600}
-        .nav-item .icon{font-size:16px;width:20px;text-align:center}
-        .sidebar-footer{padding:16px 20px;border-top:1px solid var(--bdr);font-size:10px;color:var(--dim)}
-        .main{flex:1;margin-left:220px;padding:0}
-        .topbar{background:rgba(10,15,26,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:12px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-        .tb-left{display:flex;align-items:center;gap:14px}
-        .tb-right{display:flex;align-items:center;gap:10px}
-        .badge{font-size:9px;letter-spacing:.06em;padding:4px 10px;border-radius:999px;border:1px solid rgba(34,197,94,.4);color:var(--grn);text-transform:uppercase;font-weight:700}
+        .nav-item .icon{font-size:14px;width:18px;text-align:center}
+        .sidebar-footer{padding:12px 18px;border-top:1px solid var(--bdr);font-size:9px;color:var(--dim)}
+        .main{flex:1;margin-left:210px}
+        .topbar{background:rgba(10,15,26,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--bdr);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+        .tb-left{display:flex;align-items:center;gap:12px}
+        .tb-right{display:flex;align-items:center;gap:8px}
+        .badge{font-size:8px;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid rgba(34,197,94,.4);color:var(--grn);text-transform:uppercase;font-weight:700}
         .badge.warn{border-color:rgba(234,179,8,.4);color:var(--yel)}
         .badge.live{border-color:rgba(59,130,246,.4);color:var(--blu);animation:pulse 2s infinite}
-        .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+        .badge.pur{border-color:rgba(167,139,250,.4);color:var(--pur)}
+        .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
         .dot.grn{background:var(--grn)}.dot.blu{background:var(--blu)}.dot.red{background:var(--red)}.dot.yel{background:var(--yel)}
-        .content{padding:24px 28px}
+        .content{padding:22px 24px}
 
-        /* Cards */
-        .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;transition:all .2s}
+        /* Cards — hover lift */
+        .card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;transition:all .2s cubic-bezier(.4,0,.2,1)}
         .card:hover{border-color:var(--bdr-h);background:var(--card-hover)}
-        .card-header{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center}
-        .card-header h2{font-size:13px;font-weight:700}
-        .card-body{padding:18px}
+        .card-header{padding:12px 16px;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center}
+        .card-header h2{font-size:12px;font-weight:700}
+        .card-body{padding:16px}
 
-        /* Metrics */
-        .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-        .metric{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;transition:all .2s}
-        .metric:hover{border-color:var(--bdr-h)}
+        /* Metrics — hover lift */
+        .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+        .metric{background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:14px 16px;transition:all .22s cubic-bezier(.4,0,.2,1)}
+        .metric:hover{border-color:var(--bdr-h);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
         .metric.primary{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)}
-        .metric-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px}
-        .metric-value{font-size:24px;font-weight:800;font-family:var(--mono)}
-        .metric-sub{font-size:11px;color:var(--dim);margin-top:4px}
+        .metric-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:5px}
+        .metric-value{font-size:22px;font-weight:800;font-family:var(--mono);font-variant-numeric:tabular-nums}
+        .metric-sub{font-size:10px;color:var(--dim);margin-top:3px}
         @media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:600px){.metrics{grid-template-columns:1fr}.sidebar{display:none}.main{margin-left:0}}
 
         /* Grid layouts */
-        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-        .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-        .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
-        .grid-sidebar{display:grid;grid-template-columns:380px 1fr;gap:14px}
+        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+        .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+        .grid-sidebar{display:grid;grid-template-columns:360px 1fr;gap:12px}
         @media(max-width:1100px){.grid-2,.grid-3,.grid-4,.grid-sidebar{grid-template-columns:1fr}}
+        @media(max-width:768px){.grid-4{grid-template-columns:1fr 1fr}}
 
-        /* Buttons */
-        .btn{padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;font-family:var(--sans);transition:all .15s;border:none;background:var(--blu);color:#fff;display:inline-flex;align-items:center;gap:6px}
-        .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(59,130,246,.25)}
-        .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-        .btn-sm{padding:5px 12px;font-size:11px}
+        /* Buttons — lift on hover */
+        .btn{padding:7px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:11px;font-family:var(--sans);transition:all .15s cubic-bezier(.4,0,.2,1);border:none;background:var(--blu);color:#fff;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.25)}
+        .btn:active{transform:translateY(0)}
+        .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+        .btn-sm{padding:4px 10px;font-size:10px}
+        .btn-xs{padding:3px 8px;font-size:9px;border-radius:5px}
         .btn-outline{background:transparent;border:1px solid var(--bdr);color:var(--sec)}
-        .btn-outline:hover{background:rgba(255,255,255,.05);border-color:var(--bdr-h);box-shadow:none}
-        .btn-grn{background:var(--grn)}.btn-grn:hover{box-shadow:0 6px 16px rgba(34,197,94,.25)}
-        .btn-red{background:var(--red)}.btn-red:hover{box-shadow:0 6px 16px rgba(239,68,68,.25)}
+        .btn-outline:hover{background:rgba(255,255,255,.05);border-color:var(--bdr-h);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+        .btn-grn{background:var(--grn)}.btn-grn:hover{box-shadow:0 4px 12px rgba(34,197,94,.25)}
+        .btn-red{background:var(--red)}.btn-red:hover{box-shadow:0 4px 12px rgba(239,68,68,.25)}
+        .btn-yel{background:var(--yel);color:#000}.btn-yel:hover{box-shadow:0 4px 12px rgba(234,179,8,.25)}
+        .btn-pur{background:var(--pur)}.btn-pur:hover{box-shadow:0 4px 12px rgba(167,139,250,.25)}
 
         /* Tags */
-        .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(255,255,255,.06);color:var(--sec);font-family:var(--mono)}
+        .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;background:rgba(255,255,255,.06);color:var(--sec);font-family:var(--mono)}
         .tag-black{background:#111;color:#fff}
-        .tag-green{background:rgba(34,197,94,.1);color:var(--grn);border:1px solid rgba(34,197,94,.25)}
-        .tag-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25)}
-        .tag-yellow{background:rgba(234,179,8,.1);color:var(--yel);border:1px solid rgba(234,179,8,.25)}
+        .tag-green{background:rgba(34,197,94,.1);color:var(--grn);border:1px solid rgba(34,197,94,.2)}
+        .tag-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+        .tag-yellow{background:rgba(234,179,8,.1);color:var(--yel);border:1px solid rgba(234,179,8,.2)}
+        .tag-blue{background:rgba(59,130,246,.1);color:var(--blu);border:1px solid rgba(59,130,246,.2)}
 
         /* Status pills */
-        .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+        .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600}
         .pill.recovered{background:rgba(34,197,94,.12);color:var(--grn)}
         .pill.written_off{background:rgba(239,68,68,.12);color:var(--red)}
         .pill.open,.pill.scheduled{background:rgba(147,197,253,.12);color:var(--sec)}
 
         /* Table */
-        table{width:100%;border-collapse:collapse;font-size:12px}
-        th{text-align:left;color:var(--dim);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--bdr);font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono)}
-        td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+        table{width:100%;border-collapse:collapse;font-size:11px}
+        th{text-align:left;color:var(--dim);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--bdr);font-size:9px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono)}
+        td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
         tr:hover td{background:rgba(255,255,255,.03)}
+        tr{transition:background .1s}
 
         /* Forms */
-        .form-label{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px}
-        .form-input{width:100%;padding:8px 10px;background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-size:12px;font-family:var(--sans)}
-        .form-input:focus{outline:none;border-color:var(--blu)}
+        .form-label{display:block;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:3px}
+        .form-input{width:100%;padding:7px 9px;background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-size:11px;font-family:var(--sans);transition:border-color .15s}
+        .form-input:focus{outline:none;border-color:var(--blu);box-shadow:0 0 0 2px rgba(59,130,246,.15)}
         select.form-input{cursor:pointer}
+        textarea.form-input{resize:vertical;min-height:60px;font-family:var(--mono);font-size:10px}
 
         /* Bars */
-        .bar-g{margin-bottom:12px}
-        .bar-l{display:flex;justify-content:space-between;margin-bottom:4px}
-        .bar-l span:first-child{color:var(--sec);font-size:11px;font-weight:500}
-        .bar-l span:last-child{color:var(--txt);font-size:14px;font-weight:700;font-family:var(--mono)}
-        .bar{height:18px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
-        .bf{height:100%;border-radius:5px;animation:slideR 1.2s ease both}
+        .bar-g{margin-bottom:10px}
+        .bar-l{display:flex;justify-content:space-between;margin-bottom:3px}
+        .bar-l span:first-child{color:var(--sec);font-size:10px;font-weight:500}
+        .bar-l span:last-child{color:var(--txt);font-size:13px;font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums}
+        .bar{height:16px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden}
+        .bf{height:100%;border-radius:4px;animation:slideR 1s ease both}
         .bf.t{background:linear-gradient(90deg,#3b82f6,#60a5fa)}.bf.c{background:linear-gradient(90deg,#475569,#64748b)}.bf.n{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
 
         /* Hero */
-        .hero{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:28px 32px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center}
+        .hero{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:24px 28px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center;transition:all .2s}
         .hero:hover{border-color:var(--bdr-h)}
-        .h-label{color:var(--sec);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
-        .h-amt{font-size:42px;font-weight:800;line-height:1.1;font-family:var(--mono)}
-        .h-sub{color:var(--grn);font-size:14px;font-weight:600;margin-top:6px}
-        .h-ci{color:var(--dim);font-size:11px;margin-top:4px;font-family:var(--mono)}
-        .h-delta{text-align:center;padding:8px 0}
-        .h-dv{font-size:22px;font-weight:800;color:var(--grn);font-family:var(--mono)}
-        .h-dl{color:var(--sec);font-size:11px;margin-top:2px}
+        .h-label{color:var(--sec);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+        .h-amt{font-size:38px;font-weight:800;line-height:1.1;font-family:var(--mono);font-variant-numeric:tabular-nums}
+        .h-sub{color:var(--grn);font-size:13px;font-weight:600;margin-top:5px}
+        .h-ci{color:var(--dim);font-size:10px;margin-top:3px;font-family:var(--mono)}
+        .h-delta{text-align:center;padding:6px 0}
+        .h-dv{font-size:20px;font-weight:800;color:var(--grn);font-family:var(--mono);font-variant-numeric:tabular-nums}
+        .h-dl{color:var(--sec);font-size:10px;margin-top:2px}
         @media(max-width:900px){.hero{grid-template-columns:1fr}}
 
         /* Queue item */
-        .queue-item{padding:10px 12px;border-radius:8px;border:1px solid var(--bdr);cursor:pointer;transition:all .15s}
+        .queue-item{padding:9px 11px;border-radius:7px;border:1px solid var(--bdr);cursor:pointer;transition:all .15s}
         .queue-item:hover{border-color:var(--bdr-h);background:rgba(255,255,255,.03)}
         .queue-item.selected{border-color:var(--blu);background:rgba(59,130,246,.06)}
 
         /* Chips */
-        .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-        .chip{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:999px;padding:3px 10px;font-size:11px}
+        .chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+        .chip{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:999px;padding:2px 8px;font-size:10px}
         .chip.ok{border-color:rgba(34,197,94,.25);color:#86efac;background:rgba(34,197,94,.06)}
 
-        /* Modal */
-        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:1000;padding:20px}
+        /* Modal — fade+scale in */
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px)}
         .modal.on{display:flex}
-        .modal-c{background:#1e293b;border-radius:12px;padding:24px;max-width:500px;width:100%;border:1px solid var(--bdr)}
-        .modal-c h2{font-size:16px;font-weight:700;margin-bottom:16px}
+        .modal-c{background:#1e293b;border-radius:12px;padding:22px;max-width:500px;width:100%;border:1px solid var(--bdr);animation:modalIn .25s ease;box-shadow:0 24px 48px rgba(0,0,0,.3)}
+        .modal-c h2{font-size:15px;font-weight:700;margin-bottom:14px}
 
-        /* Spinner */
-        .spinner{border:3px solid var(--bdr);border-top:3px solid var(--blu);border-radius:50%;width:28px;height:28px;animation:spin .8s linear infinite;margin:0 auto 10px}
+        /* Toast — slide in */
+        .toast{position:fixed;top:14px;right:14px;background:#1e293b;border:1px solid var(--bdr);border-radius:8px;padding:9px 14px;font-size:11px;font-weight:600;z-index:2000;animation:toastIn .25s ease;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 
-        /* Toast */
-        .toast{position:fixed;top:16px;right:16px;background:#1e293b;border:1px solid var(--bdr);border-radius:8px;padding:10px 16px;font-size:12px;font-weight:600;z-index:2000;animation:fadeIn .2s ease}
+        /* Skeleton shimmer */
+        .skeleton{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+        .sk-line{height:14px;margin-bottom:8px}
+        .sk-card{height:80px;border-radius:10px;margin-bottom:12px}
 
         /* Architecture flow */
-        .arch-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;padding:16px 0}
-        .arch-node{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:600;color:var(--blu);white-space:nowrap}
+        .arch-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;padding:14px 0}
+        .arch-node{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:7px;padding:7px 12px;font-size:10px;font-weight:600;color:var(--blu);white-space:nowrap;transition:all .15s}
+        .arch-node:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.15)}
         .arch-node.highlight{border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.1);color:var(--pur)}
-        .arch-arrow{color:var(--dim);font-size:14px}
+        .arch-arrow{color:var(--dim);font-size:12px}
+
+        /* Stepper */
+        .stepper{display:flex;gap:0;margin:12px 0}
+        .step{flex:1;text-align:center;padding:8px 4px;font-size:9px;font-weight:600;color:var(--dim);border-bottom:2px solid var(--bdr);transition:all .3s}
+        .step.active{color:var(--blu);border-bottom-color:var(--blu)}
+        .step.done{color:var(--grn);border-bottom-color:var(--grn)}
+        .step-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr);display:inline-flex;align-items:center;justify-content:center;font-size:9px;margin-bottom:4px;transition:all .3s}
+        .step.active .step-dot{border-color:var(--blu);background:rgba(59,130,246,.15);color:var(--blu)}
+        .step.done .step-dot{border-color:var(--grn);background:rgba(34,197,94,.15);color:var(--grn)}
+
+        /* Funnel */
+        .funnel{display:flex;align-items:center;gap:4px;margin:12px 0}
+        .funnel-stage{flex:1;text-align:center;padding:10px 6px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;transition:all .2s}
+        .funnel-stage:hover{border-color:var(--bdr-h)}
+        .funnel-num{font-size:18px;font-weight:800;font-family:var(--mono);font-variant-numeric:tabular-nums}
+        .funnel-label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+        .funnel-arrow{color:var(--dim);font-size:11px;flex-shrink:0}
 
         /* Feature grid */
-        .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-        .feat-item{background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:10px;padding:14px;transition:border-color .2s}
-        .feat-item:hover{border-color:var(--bdr-h)}
-        .feat-icon{font-size:18px;margin-bottom:6px}
-        .feat-title{font-size:12px;font-weight:600;margin-bottom:3px}
-        .feat-desc{font-size:10px;color:var(--dim);line-height:1.5}
+        .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .feat-item{background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:8px;padding:12px;transition:all .2s}
+        .feat-item:hover{border-color:var(--bdr-h);transform:translateY(-1px)}
+        .feat-icon{font-size:16px;margin-bottom:5px}
+        .feat-title{font-size:11px;font-weight:600;margin-bottom:2px}
+        .feat-desc{font-size:9px;color:var(--dim);line-height:1.5}
         @media(max-width:900px){.feat-grid{grid-template-columns:1fr 1fr}}
         @media(max-width:600px){.feat-grid{grid-template-columns:1fr}}
 
         /* Tech tags */
-        .tech-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-        .tech-tag{background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--sec);font-weight:500}
+        .tech-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+        .tech-tag{background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:5px;padding:3px 8px;font-size:9px;color:var(--sec);font-weight:500}
 
         /* CTA */
-        .cta-card{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(167,139,250,.08));border:1px solid rgba(59,130,246,.2);border-radius:14px;padding:28px;text-align:center}
+        .cta-card{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(167,139,250,.08));border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:24px;text-align:center}
 
-        /* Mono */
-        .mono{font-family:var(--mono)}
-
-        /* Tabular nums */
-        .tabular{font-variant-numeric:tabular-nums}
+        /* Mono + tabular */
+        .mono{font-family:var(--mono)}.tabular{font-variant-numeric:tabular-nums}
 
         /* Sound toggle */
-        .sound-toggle{cursor:pointer;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sec);padding:4px 10px;border-radius:6px;border:1px solid var(--bdr)}
+        .sound-toggle{cursor:pointer;display:flex;align-items:center;gap:4px;font-size:10px;color:var(--sec);padding:3px 8px;border-radius:5px;border:1px solid var(--bdr);transition:all .15s}
         .sound-toggle:hover{background:rgba(255,255,255,.05)}
+
+        /* Search */
+        .search-input{padding:6px 10px 6px 28px;background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-size:11px;font-family:var(--sans);width:180px;transition:all .2s}
+        .search-input:focus{outline:none;border-color:var(--blu);width:220px}
+        .search-wrap{position:relative}
+        .search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:11px;pointer-events:none}
+
+        /* Approval row */
+        .approval-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px}
+        .approval-row:last-child{border-bottom:none}
+
+        /* Security grid */
+        .sec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .sec-box{background:rgba(255,255,255,.04);padding:10px;border-radius:7px;text-align:center}
+        .sec-label{color:var(--dim);font-size:8px;text-transform:uppercase;letter-spacing:.05em}
+        .sec-val{font-size:18px;font-weight:800;margin-top:3px;font-family:var(--mono)}
+
+        /* WhatsApp preview bubble */
+        .wa-bubble{background:#111b21;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;font-size:12px;line-height:1.6;color:#e9edef;max-width:340px;margin:0 auto}
+        .wa-header{color:#00a884;font-weight:600;margin-bottom:8px;font-size:13px}
+        .wa-footer{color:#667781;font-size:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;margin-top:10px}
+        .wa-btn{display:inline-block;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;margin-top:10px;margin-right:6px}
+        .wa-btn.primary{background:rgba(0,168,132,.15);color:#00a884;border:1px solid rgba(0,168,132,.3)}
+        .wa-btn.secondary{background:rgba(255,255,255,.06);color:#8696a0;border:1px solid rgba(255,255,255,.1)}
     </style>
 </head>
 <body>
@@ -189,23 +244,20 @@
     <script type="text/babel">
     const {useState,useEffect,useRef,useCallback,Fragment} = React;
     const API = (typeof window !== 'undefined' && window.__API_BASE__) || location.origin;
-    const fmt = (p,cur) => {if(p==null||isNaN(p))return"—";const r=p/100;if(Math.abs(r)>=1e7)return`₹${(r/1e7).toFixed(2)} Cr`;if(Math.abs(r)>=1e5)return`₹${(r/1e5).toFixed(2)} L`;return`₹${r.toLocaleString("en-IN",{maximumFractionDigits:0})}`};
+    const fmt = p => {if(p==null||isNaN(p))return"—";const r=p/100;if(Math.abs(r)>=1e7)return`₹${(r/1e7).toFixed(2)} Cr`;if(Math.abs(r)>=1e5)return`₹${(r/1e5).toFixed(2)} L`;return`₹${r.toLocaleString("en-IN",{maximumFractionDigits:0})}`};
     const pct = (x,d=1)=>((x||0)*100).toFixed(d);
     const esc = s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
     const label = t => {if(!t)return"";const m={"INSUFFICIENT_FUNDS":"Insufficient Funds","HARD_DECLINE":"Hard Decline","NETWORK_TIMEOUT":"Network Timeout","3DS_OTP_CHALLENGE_TIMEOUT":"3DS OTP Timeout","GATEWAY_TIMEOUT":"Gateway Timeout","ISSUER_UNAVAILABLE":"Issuer Unavailable","SUBSCRIPTION_FAILED":"Subscription Failed","CUSTOMER_ABANDONMENT":"Customer Abandonment","INVOICE_OVERDUE":"Invoice Overdue","PRICE_SHOCK":"Price Shock","LATE_AUTH":"Late Auth","NETWORK_FAILURE":"Network Failure","CARD_EXPIRED":"Card Expired","OVERDUE_GENUINE":"Overdue Genuine","PAYMENT_DECLINED":"Payment Declined"};return m[t]||t.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())};
     const FAILURE_TYPES=["INSUFFICIENT_FUNDS","HARD_DECLINE","NETWORK_TIMEOUT","3DS_OTP_CHALLENGE_TIMEOUT","GATEWAY_TIMEOUT","ISSUER_UNAVAILABLE","SUBSCRIPTION_FAILED","CUSTOMER_ABANDONMENT"];
 
-    const CURRENCIES={USD:{symbol:"$",locale:"en-US"},INR:{symbol:"₹",locale:"en-IN"},EUR:{symbol:"€",locale:"de-DE"}};
-    const fmtCurrency=(amount,currency="INR")=>{const c=CURRENCIES[currency]||CURRENCIES.INR;return new Intl.NumberFormat(c.locale,{style:"currency",currency,minimumFractionDigits:0,maximumFractionDigits:0}).format(amount)};
-
-    function useAnimatedNumber(target,duration=1200){const[val,setVal]=useState(0);const ref=useRef(null);useEffect(()=>{const start=performance.now();const from=val;const tick=now=>{const t=Math.min((now-start)/duration,1);const ease=1-Math.pow(1-t,3);setVal(from+(target-from)*ease);if(t<1)ref.current=requestAnimationFrame(tick)};ref.current=requestAnimationFrame(tick);return()=>cancelAnimationFrame(ref.current)},[target]);return val}
-
     // ── Audio ──
     const AudioCtx=(()=>{let ctx=null;return()=>{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx}})();
-    function playRecoveryTriad(){const ctx=AudioCtx();if(!ctx)return;if(ctx.state==='suspended')ctx.resume();const notes=[659.25,987.77,1318.51];const now=ctx.currentTime;notes.forEach((freq,i)=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.type='sine';osc.frequency.value=freq;gain.gain.value=0.08;osc.connect(gain).connect(ctx.destination);const t=now+i*0.12;osc.start(t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.6);osc.stop(t+0.65)})}
-    function burstConfetti(canvas){const ctx=canvas.getContext('2d');const W=canvas.width=canvas.offsetWidth;const H=canvas.height=canvas.offsetHeight;const particles=Array.from({length:45},()=>({x:W/2,y:H/2,vx:(Math.random()-0.5)*12,vy:-Math.random()*8-4,r:4+Math.random()*4,life:1.0}));const colors=['#22c55e','#16a34a','#eab308','#f59e0b','#f97316'];function frame(){ctx.clearRect(0,0,W,H);let alive=0;particles.forEach(p=>{if(p.life<=0)return;alive++;p.x+=p.vx;p.y+=p.vy;p.vy+=0.18;p.life-=0.018;ctx.globalAlpha=p.life;ctx.fillStyle=colors[Math.floor(Math.random()*colors.length)];ctx.beginPath();ctx.arc(p.x,p.y,Math.max(1,p.r*p.life),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;if(alive>0)requestAnimationFrame(frame)}frame()}
+    function playTriad(){const ctx=AudioCtx();if(!ctx)return;if(ctx.state==='suspended')ctx.resume();[659.25,987.77,1318.51].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=f;g.gain.value=0.07;o.connect(g).connect(ctx.destination);const t=ctx.currentTime+i*0.12;o.start(t);g.gain.exponentialRampToValueAtTime(0.001,t+0.55);o.stop(t+0.6)})}
+    function burstConfetti(cvs){const ctx=cvs.getContext('2d');const W=cvs.width=cvs.offsetWidth;const H=cvs.height=cvs.offsetHeight;const ps=Array.from({length:50},()=>({x:W/2,y:H/2,vx:(Math.random()-.5)*14,vy:-Math.random()*9-3,r:3+Math.random()*5,life:1}));const cols=['#22c55e','#16a34a','#eab308','#f59e0b','#f97316','#3b82f6','#a78bfa'];(function f(){ctx.clearRect(0,0,W,H);let a=0;ps.forEach(p=>{if(p.life<=0)return;a++;p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.life-=.016;ctx.globalAlpha=p.life;ctx.fillStyle=cols[~~(Math.random()*cols.length)];ctx.beginPath();ctx.arc(p.x,p.y,Math.max(.5,p.r*p.life),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;if(a>0)requestAnimationFrame(f)})()}
+    window.addEventListener('recovery-complete',()=>{playTriad();const c=document.getElementById('confetti-canvas');if(c)burstConfetti(c)});
 
-    window.addEventListener('recovery-complete',()=>{playRecoveryTriad();const c=document.getElementById('confetti-canvas');if(c)burstConfetti(c)});
+    // ── Keyboard shortcut ──
+    // handled in App via useEffect
 
     // ── Main App ──
     function App(){
@@ -221,24 +273,41 @@
         const[selectedCase,setSelectedCase]=useState(null);
         const[toast,setToast]=useState(null);
         const[soundEnabled,setSoundEnabled]=useState(true);
-        const[checkoutName,setCheckoutName]=useState("Rahul");
-        const[checkoutEmail,setCheckoutEmail]=useState("rahul@example.com");
-        const[checkoutAmount,setCheckoutAmount]=useState(1798);
-        const[failureType,setFailureType]=useState("INSUFFICIENT_FUNDS");
-        const[checkoutStep,setCheckoutStep]=useState("form");
-        const[latestCase,setLatestCase]=useState(null);
-        const[expandedId,setExpandedId]=useState(null);
-        const[gmv,setGmv]=useState(100000);
+        const[autoPilot,setAutoPilot]=useState(false);
+        const[lastUpdated,setLastUpdated]=useState(null);
+        const[security,setSecurity]=useState(null);
+        const[budget,setBudget]=useState(null);
+        const[bandit,setBandit]=useState(null);
+        const[cusum,setCusum]=useState(null);
+        const[incidents,setIncidents]=useState(null);
+        const[approval,setApproval]=useState(null);
+        const[funnel,setFunnel]=useState(null);
         const wsRef=useRef(null);
         const didAutoRun=useRef(false);
+        const autoPilotRef=useRef(false);
+        autoPilotRef.current=autoPilot;
 
         const notify=useCallback(msg=>{setToast(msg);setTimeout(()=>setToast(null),3000)},[]);
 
         const fetchBaseline=useCallback(async()=>{
             try{
-                const[r1,r2]=await Promise.all([fetch(`${API}/report/baseline`),fetch(`${API}/cases/recent?limit=50`)]);
+                const[r1,r2,r3,r4,r5,r6,r7,r8,r9]=await Promise.all([
+                    fetch(`${API}/report/baseline`),fetch(`${API}/cases/recent?limit=50`),
+                    fetch(`${API}/security/report`),fetch(`${API}/budget`),
+                    fetch(`${API}/analytics/bandit`),fetch(`${API}/analytics/cusum`),
+                    fetch(`${API}/incidents`),fetch(`${API}/approval/queue`),
+                    fetch(`${API}/analytics/funnel`),
+                ]);
                 if(r1.ok)setRep(await r1.json());
                 if(r2.ok)setCases((await r2.json()).cases);
+                if(r3.ok)setSecurity(await r3.json());
+                if(r4.ok)setBudget(await r4.json());
+                if(r5.ok)setBandit(await r5.json());
+                if(r6.ok)setCusum(await r6.json());
+                if(r7.ok)setIncidents(await r7.json());
+                if(r8.ok)setApproval(await r8.json());
+                if(r9.ok)setFunnel(await r9.json());
+                setLastUpdated(new Date());
                 setLoading(false);setError(false);
             }catch(e){setError(true);setLoading(false)}
         },[]);
@@ -247,7 +316,16 @@
         useEffect(()=>{if(running)return;const id=setInterval(fetchBaseline,30000);return()=>clearInterval(id)},[running,fetchBaseline]);
 
         // Auto-run on first load
-        useEffect(()=>{if(!loading&&!error&&rep&&!didAutoRun.current){didAutoRun.current=true;const n=rep.batch?.cases||0;if(n===0)runBatch()}},[loading,error,rep]);
+        useEffect(()=>{if(!loading&&!error&&rep&&!didAutoRun.current){didAutoRun.current=true;if((rep.batch?.cases||0)===0)runBatch()}},[loading,error,rep]);
+
+        // Auto-pilot loop
+        useEffect(()=>{if(!autoPilot||running)return;const id=setInterval(()=>{if(!autoPilotRef.current||running)return;runBatch()},15000);return()=>clearInterval(id)},[autoPilot,running]);
+
+        // Keyboard shortcut: Cmd+R / Ctrl+R
+        useEffect(()=>{
+            const handler=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='r'&&!running){e.preventDefault();runBatch()}};
+            window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);
+        },[running]);
 
         const runBatch=useCallback(()=>{
             if(running)return;setRunning(true);setProgress({current:0,total:1});setLiveRep(null);
@@ -255,20 +333,25 @@
             const wsProto=location.protocol==='https:'?'wss:':'ws:';
             const ws=new WebSocket(`${wsProto}//${wsHost}/ws/replay?seed=42&cases=200`);
             wsRef.current=ws;
-            ws.onmessage=e=>{try{const msg=JSON.parse(e.data);if(msg.type==="start")setProgress({current:0,total:msg.total});else if(msg.type==="progress")setProgress({current:msg.current,total:msg.total});else if(msg.type==="done"){setLiveRep(msg.report);setRunning(false);ws.close();fetch(`${API}/cases/recent?limit=50`).then(r=>r.json()).then(d=>{if(d.cases)setCases(d.cases)}).catch(()=>{});try{window.dispatchEvent(new Event('recovery-complete'))}catch(e){}}else if(msg.type==="error"){setRunning(false);ws.close()}}catch(err){}};
+            ws.onmessage=e=>{try{const msg=JSON.parse(e.data);if(msg.type==="start")setProgress({current:0,total:msg.total});else if(msg.type==="progress")setProgress({current:msg.current,total:msg.total});else if(msg.type==="done"){setLiveRep(msg.report);setRunning(false);ws.close();fetch(`${API}/cases/recent?limit=50`).then(r=>r.json()).then(d=>{if(d.cases)setCases(d.cases)}).catch(()=>{});setLastUpdated(new Date());try{window.dispatchEvent(new Event('recovery-complete'))}catch(e){}}else if(msg.type==="error"){setRunning(false);ws.close()}}catch(err){}};
             ws.onerror=()=>setRunning(false);ws.onclose=()=>setRunning(false);
         },[running]);
-
-        const simulateCheckout=useCallback(async()=>{
-            setCheckoutStep("processing");
-            try{const r=await fetch(`${API}/cases/recent?limit=1`);const d=await r.json();const c=d.cases?.[0];if(c){setLatestCase(c);setCheckoutStep("done");notify("Failure simulated — agent classified as "+label(c.failure_class))}else{notify("No cases to preview");setCheckoutStep("form")}}catch(e){notify("Simulation failed");setCheckoutStep("form")}
-        },[notify]);
 
         const dismissLive=useCallback(()=>setLiveRep(null),[]);
         useEffect(()=>{return()=>{if(wsRef.current)wsRef.current.close()}},[]);
 
-        if(loading)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><div className="spinner"></div><p style={{color:"var(--dim)",fontSize:13}}>Loading recovery metrics…</p></div></div>;
-        if(error)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><p style={{fontSize:16,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)",fontSize:12}}>The API runs on port <b>8000</b>. Start with: <code className="mono">uvicorn app.main:app --port 8000</code></p><button className="btn" style={{marginTop:12}} onClick={fetchBaseline}>Retry</button></div></div>;
+        // Skeleton loader
+        if(loading)return(
+            <div className="layout">
+                <aside className="sidebar"><div className="sidebar-logo"><h1>RR Agent</h1><div className="sub">Revenue Recovery</div></div></aside>
+                <div className="main"><div className="content" style={{padding:40}}>
+                    <div className="skeleton sk-card" style={{height:180,marginBottom:16}}></div>
+                    <div className="metrics">{[1,2,3,4].map(i=><div key={i} className="skeleton sk-card"></div>)}</div>
+                    <div className="grid-2">{[1,2].map(i=><div key={i} className="skeleton sk-card" style={{height:260}}></div>)}</div>
+                </div></div>
+            </div>
+        );
+        if(error)return<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><p style={{fontSize:16,marginBottom:8}}>Failed to load report</p><p style={{color:"var(--dim)",fontSize:11}}>Start with: <code className="mono">uvicorn app.main:app --port 8000</code></p><button className="btn" style={{marginTop:12}} onClick={fetchBaseline}>Retry</button></div></div>;
 
         const active=liveRep||rep;
         const hd=active.headline||{},batch=active.batch||{},cost=active.cost||{},perClass=active.per_class||{},promises=active.promises||{};
@@ -282,46 +365,39 @@
             {toast&&<div className="toast">{toast}</div>}
 
             <div className="layout">
-                {/* Sidebar */}
                 <aside className="sidebar">
-                    <div className="sidebar-logo">
-                        <h1>RR Agent</h1>
-                        <div className="sub">Revenue Recovery</div>
-                    </div>
+                    <div className="sidebar-logo"><h1>RR Agent</h1><div className="sub">Revenue Recovery</div></div>
                     <nav className="nav">
                         <div className="nav-section">Core</div>
-                        {[
-                            {id:"hub",icon:"📊",label:"Dashboard"},
-                            {id:"ledger",icon:"📋",label:"Case Ledger"},
-                            {id:"engine",icon:"⚙️",label:"Engine & ROI"},
-                        ].map(n=><div key={n.id} className={`nav-item ${tab===n.id?"active":""}`} onClick={()=>setTab(n.id)}><span className="icon">{n.icon}</span>{n.label}</div>)}
+                        {[{id:"hub",icon:"📊",label:"Dashboard"},{id:"ledger",icon:"📋",label:"Case Ledger"},{id:"engine",icon:"⚙️",label:"Engine & ROI"},{id:"tools",icon:"🛠",label:"Tools"},{id:"security",icon:"🛡",label:"Security"}].map(n=><div key={n.id} className={`nav-item ${tab===n.id?"active":""}`} onClick={()=>setTab(n.id)}><span className="icon">{n.icon}</span>{n.label}</div>)}
                     </nav>
-                    <div className="sidebar-footer">
-                        <div>v0.4.0 — Buildathon 2026</div>
-                    </div>
+                    <div className="sidebar-footer">v0.5.0 — Buildathon 2026</div>
                 </aside>
 
-                {/* Main */}
                 <div className="main">
                     <div className="topbar">
                         <div className="tb-left">
                             {running&&<span className="badge live">LIVE</span>}
-                            {running&&<span style={{fontSize:11,color:"var(--blu)"}}>{progress.total>1?`${progress.current}/${progress.total}`:"Running…"}</span>}
-                            {!running&&<span className="badge">{batch.cases||"—"} cases · {batch.treatment_n||"—"}T/{batch.control_n||"--"}C</span>}
-                            <div className="sound-toggle" onClick={()=>{setSoundEnabled(!soundEnabled);notify(soundEnabled?"Muted":"Sound on")}}>
-                                {soundEnabled?"🔊":"🔇"} <span className="mono">{soundEnabled?"ON":"OFF"}</span>
-                            </div>
+                            {running&&<span style={{fontSize:10,color:"var(--blu)"}}>{progress.total>1?`${progress.current}/${progress.total}`:"Running…"}</span>}
+                            {!running&&<span className="badge">{batch.cases||"—"} cases</span>}
+                            {lastUpdated&&<span style={{fontSize:9,color:"var(--dim)",fontFamily:"var(--mono)"}}>updated {lastUpdated.toLocaleTimeString()}</span>}
                         </div>
                         <div className="tb-right">
-                            <button className="btn btn-sm btn-outline" onClick={fetchBaseline} disabled={running}>↻ Refresh</button>
+                            <div className="sound-toggle" onClick={()=>{setSoundEnabled(!soundEnabled);notify(soundEnabled?"Muted":"Sound on")}}>{soundEnabled?"🔊":"🔇"}</div>
+                            <div className={`sound-toggle ${autoPilot?"tag-blue":""}`} onClick={()=>{setAutoPilot(!autoPilot);notify(autoPilot?"Auto-pilot off":"Auto-pilot on")}} style={autoPilot?{borderColor:"rgba(59,130,246,.4)",color:"var(--blu)"}:{}}>
+                                {autoPilot?"⚡ AUTO":"⚡ OFF"}
+                            </div>
+                            <button className="btn btn-sm btn-outline" onClick={fetchBaseline} disabled={running}>↻</button>
                             <button className="btn btn-sm" onClick={runBatch} disabled={running}>{running?"Running…":"Run Batch"}</button>
                         </div>
                     </div>
 
                     <div className="content">
-                        {tab==="hub"&&<HubTab hd={hd} batch={batch} cost={cost} perClass={perClass} promises={promises} blocks={blocks} cpir={cpir} naiveRate={naiveRate} cases={cases} running={running} progress={progress} liveRep={liveRep} dismissLive={dismissLive} onCaseClick={id=>{setSelectedCase(id);setAuditOpen(true)}} API={API}/>}
+                        {tab==="hub"&&<HubTab hd={hd} batch={batch} cost={cost} perClass={perClass} promises={promises} blocks={blocks} cpir={cpir} naiveRate={naiveRate} cases={cases} running={running} progress={progress} liveRep={liveRep} dismissLive={dismissLive} onCaseClick={id=>{setSelectedCase(id);setAuditOpen(true)}} API={API} funnel={funnel} approval={approval} budget={budget}/>}
                         {tab==="ledger"&&<LedgerTab cases={cases} onCaseClick={id=>{setSelectedCase(id);setAuditOpen(true)}} API={API}/>}
-                        {tab==="engine"&&<EngineTab gmv={gmv} setGmv={setGmv} checkoutName={checkoutName} setCheckoutName={setCheckoutName} checkoutEmail={checkoutEmail} setCheckoutEmail={setCheckoutEmail} checkoutAmount={checkoutAmount} setCheckoutAmount={setCheckoutAmount} failureType={failureType} setFailureType={setFailureType} checkoutStep={checkoutStep} simulateCheckout={simulateCheckout} latestCase={latestCase} soundEnabled={soundEnabled}/>}
+                        {tab==="engine"&&<EngineTab bandit={bandit} cusum={cusum} budget={budget} incidents={incidents} API={API} notify={notify}/>}
+                        {tab==="tools"&&<ToolsTab API={API} notify={notify}/>}
+                        {tab==="security"&&<SecurityTab security={security} API={API} notify={notify}/>}
                     </div>
                 </div>
             </div>
@@ -332,7 +408,7 @@
     }
 
     // ── Hub Tab ──
-    function HubTab({hd,batch,cost,perClass,promises,blocks,cpir,naiveRate,cases,running,progress,liveRep,dismissLive,onCaseClick,API}){
+    function HubTab({hd,batch,cost,perClass,promises,blocks,cpir,naiveRate,cases,running,progress,liveRep,dismissLive,onCaseClick,API,funnel,approval,budget}){
         const ci=hd.incremental_recovery_ci95_pp||[0,0];
         const lift=hd.incremental_recovery_pp||0;
         const classRef=useRef(null);
@@ -343,20 +419,20 @@
             if(charts.current.cls)charts.current.cls.destroy();
             const entries=Object.entries(perClass).sort((a,b)=>b[1].lift_pp-a[1].lift_pp);
             if(entries.length&&classRef.current){
-                charts.current.cls=new Chart(classRef.current,{type:"bar",data:{labels:entries.map(([c])=>c.replace(/_/g," ").toLowerCase()),datasets:[{label:"Treatment %",data:entries.map(([,d])=>pct(d.treatment_rate,1)),backgroundColor:"#3b82f6",borderRadius:4},{label:"Control %",data:entries.map(([,d])=>pct(d.control_rate,1)),backgroundColor:"#64748b",borderRadius:4}]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:11}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:10}},grid:{color:"rgba(255,255,255,0.04)"}},y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,0.04)"}}}}});
+                charts.current.cls=new Chart(classRef.current,{type:"bar",data:{labels:entries.map(([c])=>c.replace(/_/g," ").toLowerCase()),datasets:[{label:"Treatment %",data:entries.map(([,d])=>pct(d.treatment_rate,1)),backgroundColor:"#3b82f6",borderRadius:3},{label:"Control %",data:entries.map(([,d])=>pct(d.control_rate,1)),backgroundColor:"#64748b",borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:10}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:9}},grid:{color:"rgba(255,255,255,0.04)"}},y:{beginAtZero:true,max:100,ticks:{color:"#94a3b8",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,0.04)"}}}}});
             }
             if(charts.current.spend)charts.current.spend.destroy();
             const chs=Object.entries(cost.cost_by_channel_paise||{}).filter(([,v])=>v>0).map(([k,v])=>({n:k[0].toUpperCase()+k.slice(1),v}));
             if(chs.length&&spendRef.current){
-                charts.current.spend=new Chart(spendRef.current,{type:"doughnut",data:{labels:chs.map(c=>`${c.n} · ${fmt(c.v)}`),datasets:[{data:chs.map(c=>c.v),backgroundColor:["#38bdf8","#4ade80","#fbbf24","#f87171","#a78bfa"]}]},options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",padding:12,font:{size:11}}}}}});
+                charts.current.spend=new Chart(spendRef.current,{type:"doughnut",data:{labels:chs.map(c=>`${c.n} · ${fmt(c.v)}`),datasets:[{data:chs.map(c=>c.v),backgroundColor:["#38bdf8","#4ade80","#fbbf24","#f87171","#a78bfa"]}]},options:{responsive:true,cutout:"55%",plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",padding:10,font:{size:10}}}}}});
             }
         },[perClass,cost]);
 
         return(
             <>
-                {liveRep&&<div style={{background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.2)",borderRadius:10,padding:"8px 14px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12}}>
+                {liveRep&&<div style={{background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.2)",borderRadius:8,padding:"7px 12px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
                     <span style={{color:"var(--blu)",fontWeight:600}}>LIVE results from batch run</span>
-                    <button className="btn btn-sm btn-outline" onClick={dismissLive}>Show baseline</button>
+                    <button className="btn btn-xs btn-outline" onClick={dismissLive}>Show baseline</button>
                 </div>}
 
                 {/* Hero */}
@@ -370,72 +446,93 @@
                     <div>
                         <div className="bar-g"><div className="bar-l"><span>Treatment (agent)</span><span>{pct(hd.recovery_rate_treatment)}%</span></div><div className="bar"><div className="bf t" style={{width:pct(hd.recovery_rate_treatment)+"%"}}></div></div></div>
                         <div className="bar-g"><div className="bar-l"><span>Control (no agent)</span><span>{pct(hd.recovery_rate_control)}%</span></div><div className="bar"><div className="bf c" style={{width:pct(hd.recovery_rate_control)+"%"}}></div></div></div>
-                        {naiveRate!=null&&<div className="bar-g"><div className="bar-l"><span>Naive retry baseline</span><span>{pct(naiveRate)}%</span></div><div className="bar"><div className="bf n" style={{width:pct(naiveRate)+"%"}}></div></div></div>}
-                        <div className="h-delta"><div className="h-dv">+{fmt(hd.incremental_money_paise)}</div><div className="h-dl">money recovered that wouldn't have been</div></div>
+                        {naiveRate!=null&&<div className="bar-g"><div className="bar-l"><span>Naive retry</span><span>{pct(naiveRate)}%</span></div><div className="bar"><div className="bf n" style={{width:pct(naiveRate)+"%"}}></div></div></div>}
+                        <div className="h-delta"><div className="h-dv">+{fmt(hd.incremental_money_paise)}</div><div className="h-dl">incremental money recovered</div></div>
                     </div>
                 </div>
 
                 {/* Metrics */}
                 <div className="metrics">
-                    <div className="metric"><div className="metric-label">Recovery rate</div><div className="metric-value tabular">{pct(hd.recovery_rate_treatment)}%</div><div className="metric-sub">control {pct(hd.recovery_rate_control)}%</div></div>
-                    <div className="metric"><div className="metric-label">Incremental lift</div><div className="metric-value tabular" style={{color:"var(--grn)"}}>+{(hd.incremental_recovery_pp||0).toFixed(1)} pp</div><div className="metric-sub">95% CI [+{hd.incremental_recovery_ci95_pp?.[0]}, +{hd.incremental_recovery_ci95_pp?.[1]}]</div></div>
-                    <div className="metric primary"><div className="metric-label">Money recovered</div><div className="metric-value tabular">{fmt(hd.incremental_money_paise)}</div><div className="metric-sub">incremental vs control</div></div>
-                    <div className="metric"><div className="metric-label">Amount at risk</div><div className="metric-value tabular">{fmt(batch.amount_at_risk_paise)}</div><div className="metric-sub">across {batch.cases} cases</div></div>
+                    <div className="metric a-fu d1"><div className="metric-label">Recovery rate</div><div className="metric-value tabular">{pct(hd.recovery_rate_treatment)}%</div><div className="metric-sub">control {pct(hd.recovery_rate_control)}%</div></div>
+                    <div className="metric a-fu d2"><div className="metric-label">Incremental lift</div><div className="metric-value tabular" style={{color:"var(--grn)"}}>+{(hd.incremental_recovery_pp||0).toFixed(1)} pp</div><div className="metric-sub">95% CI [+{ci[0]}, +{ci[1]}]</div></div>
+                    <div className="metric primary a-fu d3"><div className="metric-label">Money recovered</div><div className="metric-value tabular">{fmt(hd.incremental_money_paise)}</div><div className="metric-sub">incremental vs control</div></div>
+                    <div className="metric a-fu d4"><div className="metric-label">Amount at risk</div><div className="metric-value tabular">{fmt(batch.amount_at_risk_paise)}</div><div className="metric-sub">across {batch.cases} cases</div></div>
                 </div>
 
-                {/* Compliance */}
-                <div className="grid-4" style={{marginBottom:20}}>
-                    <div className="card card-body"><div className="form-label">Redundant contacts</div><div style={{fontSize:20,fontWeight:700,fontFamily:"var(--mono)"}}>{pct(cost.redundant_contact_share,0)}%</div><div className="metric-sub">would have paid anyway</div></div>
-                    <div className="card card-body"><div className="form-label">Opt-outs honored</div><div style={{fontSize:20,fontWeight:700,fontFamily:"var(--mono)"}}>{cost.opt_outs||0}</div><div className="metric-sub">every one respected</div></div>
-                    <div className="card card-body"><div className="form-label">Promises-to-pay</div><div style={{fontSize:20,fontWeight:700,fontFamily:"var(--mono)"}}>{promises.received||0}</div><div className="metric-sub">{promises.keep_rate!=null?pct(promises.keep_rate,0)+"% keep rate":"none yet"}</div></div>
-                    <div className="card card-body"><div className="form-label">Cost per recovery</div><div style={{fontSize:20,fontWeight:700,fontFamily:"var(--mono)"}}>{cpir!=null?fmt(cpir):"—"}</div><div className="metric-sub">{cost.contacts_executed||0} contacts</div></div>
+                {/* Recovery Funnel */}
+                {funnel&&funnel.stages&&<div className="card a-fu" style={{marginBottom:16}}>
+                    <div className="card-header"><h2>Recovery Funnel</h2></div>
+                    <div className="card-body">
+                        <div className="funnel">
+                            {funnel.stages.map((s,i)=>(
+                                <Fragment key={i}>
+                                    {i>0&&<span className="funnel-arrow">→</span>}
+                                    <div className="funnel-stage">
+                                        <div className="funnel-num" style={{color:i===funnel.stages.length-1?"var(--grn)":"var(--txt)"}}>{s.count}</div>
+                                        <div className="funnel-label">{s.label}</div>
+                                        {s.dropoff_pct!=null&&<div style={{fontSize:8,color:"var(--red)",marginTop:2}}>-{s.dropoff_pct.toFixed(0)}%</div>}
+                                    </div>
+                                </Fragment>
+                            ))}
+                        </div>
+                    </div>
+                </div>}
+
+                {/* Compliance + Approval */}
+                <div className="grid-4" style={{marginBottom:16}}>
+                    <div className="card card-body a-fu d1"><div className="metric-label">Redundant contacts</div><div className="metric-value tabular">{pct(cost.redundant_contact_share,0)}%</div><div className="metric-sub">would have paid anyway</div></div>
+                    <div className="card card-body a-fu d2"><div className="metric-label">Opt-outs honored</div><div className="metric-value tabular">{cost.opt_outs||0}</div><div className="metric-sub">every one respected</div></div>
+                    <div className="card card-body a-fu d3"><div className="metric-label">Promises-to-pay</div><div className="metric-value tabular">{promises.received||0}</div><div className="metric-sub">{promises.keep_rate!=null?pct(promises.keep_rate,0)+"% keep":"none yet"}</div></div>
+                    <div className="card card-body a-fu d4"><div className="metric-label">Cost per recovery</div><div className="metric-value tabular">{cpir!=null?fmt(cpir):"—"}</div><div className="metric-sub">{cost.contacts_executed||0} contacts</div></div>
                 </div>
+
+                {/* Approval Queue inline */}
+                {approval&&approval.count>0&&<div className="card a-fu" style={{marginBottom:16}}>
+                    <div className="card-header"><h2>✋ Approval Queue</h2><span className="badge warn">{approval.count} pending</span></div>
+                    <div className="card-body">
+                        {(approval.queue||[]).slice(0,3).map(c=><div key={c.case_id} className="approval-row">
+                            <div><span style={{fontWeight:600}}>{c.customer}</span><span style={{color:"var(--dim)",marginLeft:6,fontSize:10}}>{label(c.failure_class)}</span></div>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                <span className="mono tabular" style={{fontWeight:700}}>{fmt(c.amount_paise)}</span>
+                                <button className="btn btn-xs btn-grn" onClick={async()=>{await fetch(`${API}/approval/${c.case_id}/approve`,{method:"POST"});notify("Approved");fetchBaseline?.()}}>Approve</button>
+                                <button className="btn btn-xs btn-red" onClick={async()=>{await fetch(`${API}/approval/${c.case_id}/reject`,{method:"POST"});notify("Rejected")}}>Reject</button>
+                            </div>
+                        </div>)}
+                    </div>
+                </div>}
 
                 {/* Charts */}
-                <div className="grid-2" style={{marginBottom:20}}>
-                    <div className="card"><div className="card-header"><h2>Recovery by failure class</h2></div><div className="card-body"><canvas ref={classRef} height="220"></canvas></div></div>
-                    <div className="card"><div className="card-header"><h2>Spend by channel</h2></div><div className="card-body">{Object.keys(cost.cost_by_channel_paise||{}).length?<canvas ref={spendRef} height="220"></canvas>:<p style={{color:"var(--dim)",textAlign:"center",padding:"60px 0",fontSize:12}}>No spend recorded</p>}</div></div>
+                <div className="grid-2" style={{marginBottom:16}}>
+                    <div className="card a-fu d5"><div className="card-header"><h2>Recovery by failure class</h2></div><div className="card-body"><canvas ref={classRef} height="200"></canvas></div></div>
+                    <div className="card a-fu d6"><div className="card-header"><h2>Spend by channel</h2></div><div className="card-body">{Object.keys(cost.cost_by_channel_paise||{}).length?<canvas ref={spendRef} height="200"></canvas>:<p style={{color:"var(--dim)",textAlign:"center",padding:"50px 0",fontSize:11}}>No spend recorded</p>}</div></div>
                 </div>
 
                 {/* Policy blocks */}
-                <div className="card" style={{marginBottom:20}}>
+                <div className="card a-fu" style={{marginBottom:16}}>
                     <div className="card-header"><h2>Policy gates that blocked actions</h2></div>
-                    <div className="card-body">
-                        <div className="chips">
-                            {Object.entries(blocks).length?Object.entries(blocks).map(([k,v])=><span className="chip" key={k}>{esc(k||"unknown")} · {v}</span>):<span className="chip ok">no blocked actions</span>}
-                        </div>
-                    </div>
+                    <div className="card-body"><div className="chips">{Object.entries(blocks).length?Object.entries(blocks).map(([k,v])=>(<span className="chip" key={k}>{esc(k)} · {v}</span>)):<span className="chip ok">no blocked actions</span>}</div></div>
                 </div>
 
-                {/* Cases table */}
-                <div className="card" style={{marginBottom:20}}>
-                    <div className="card-header"><h2>Recent cases</h2><span style={{fontSize:10,color:"var(--dim)"}}>click for audit trail</span></div>
+                {/* Cases */}
+                <div className="card a-fu" style={{marginBottom:16}}>
+                    <div className="card-header"><h2>Recent cases</h2><span style={{fontSize:9,color:"var(--dim)"}}>click for audit trail</span></div>
                     <div style={{overflowX:"auto"}}>
                         <table><thead><tr><th>Case</th><th>Class</th><th>Amount</th><th>Status</th><th>Recovered</th></tr></thead>
-                        <tbody>{cases.slice(0,15).length?cases.slice(0,15).map(c=><tr key={c.case_id} onClick={()=>onCaseClick(c.case_id)} style={{cursor:"pointer"}}>
-                            <td className="mono">{c.case_id}</td><td>{esc(c.failure_class.replace(/_/g," "))}</td><td className="tabular">{fmt(c.amount_paise)}</td>
+                        <tbody>{cases.slice(0,12).length?cases.slice(0,12).map(c=><tr key={c.case_id} onClick={()=>onCaseClick(c.case_id)} style={{cursor:"pointer"}}>
+                            <td className="mono">{c.case_id.slice(0,12)}</td><td>{label(c.failure_class)}</td><td className="tabular">{fmt(c.amount_paise)}</td>
                             <td><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span></td><td className="tabular">{c.recovered_amount_paise?fmt(c.recovered_amount_paise):"—"}</td>
                         </tr>):<tr><td colSpan="5" style={{color:"var(--dim)"}}>no cases yet</td></tr>}</tbody></table>
                     </div>
                 </div>
 
                 {/* Features */}
-                <div className="feat-grid" style={{marginBottom:20}}>
-                    <div className="feat-item"><div className="feat-icon">📊</div><div className="feat-title">Incremental Lift Measurement</div><div className="feat-desc">Randomized control group absorbs organic recoveries. Bootstrap 95% CI.</div></div>
-                    <div className="feat-item"><div className="feat-icon">🛡</div><div className="feat-title">Compliance-First Gates</div><div className="feat-desc">Quiet hours, attempt caps, cooldowns, opt-out registry, human approval.</div></div>
-                    <div className="feat-item"><div className="feat-icon">🧠</div><div className="feat-title">ML + SHAP Explainability</div><div className="feat-desc">HistGradientBoosting predicts recovery probability with SHAP values.</div></div>
-                    <div className="feat-item"><div className="feat-icon">🎰</div><div className="feat-title">UCB1 Bandit Optimizer</div><div className="feat-desc">Multi-armed bandit picks best channel per failure class via UCB1 scoring.</div></div>
-                    <div className="feat-item"><div className="feat-icon">🔗</div><div className="feat-title">Hash-Chained Audit Trail</div><div className="feat-desc">SHA-256 chain. Tamper-evident, verify endpoint included.</div></div>
-                    <div className="feat-item"><div className="feat-icon">📈</div><div className="feat-title">CUSUM Degradation Detector</div><div className="feat-desc">Page's CUSUM for success-rate shifts with automatic alerts.</div></div>
-                </div>
-
-                {/* Tech stack */}
-                <div className="card" style={{marginBottom:20}}>
-                    <div className="card-body">
-                        <div className="tech-row">
-                            <span className="tech-tag">Python 3.13</span><span className="tech-tag">FastAPI</span><span className="tech-tag">SQLite</span><span className="tech-tag">React 18</span><span className="tech-tag">Chart.js</span><span className="tech-tag">scikit-learn</span><span className="tech-tag">SHAP</span><span className="tech-tag">WebSocket</span><span className="tech-tag">UCB1 Bandit</span><span className="tech-tag">Groq LLaMA-3</span>
-                        </div>
-                    </div>
+                <div className="feat-grid" style={{marginBottom:16}}>
+                    <div className="feat-item"><div className="feat-icon">📊</div><div className="feat-title">Incremental Lift</div><div className="feat-desc">Control group absorbs organic recoveries. Bootstrap 95% CI.</div></div>
+                    <div className="feat-item"><div className="feat-icon">🛡</div><div className="feat-title">Compliance Gates</div><div className="feat-desc">Quiet hours, attempt caps, cooldowns, opt-outs, human approval.</div></div>
+                    <div className="feat-item"><div className="feat-icon">🧠</div><div className="feat-title">ML + SHAP</div><div className="feat-desc">HistGradientBoosting with explainable SHAP values.</div></div>
+                    <div className="feat-item"><div className="feat-icon">🎰</div><div className="feat-title">UCB1 Bandit</div><div className="feat-desc">Multi-armed bandit picks best channel per failure class.</div></div>
+                    <div className="feat-item"><div className="feat-icon">🔗</div><div className="feat-title">Audit Trail</div><div className="feat-desc">SHA-256 hash chain. Tamper-evident.</div></div>
+                    <div className="feat-item"><div className="feat-icon">📈</div><div className="feat-title">CUSUM Detector</div><div className="feat-desc">Page's CUSUM for success-rate shifts.</div></div>
                 </div>
             </>
         );
@@ -443,9 +540,11 @@
 
     // ── Ledger Tab ──
     function LedgerTab({cases,onCaseClick,API}){
+        const[search,setSearch]=useState("");
         const[expandedId,setExpandedId]=useState(null);
+        const filtered=cases.filter(c=>{if(!search)return true;const q=search.toLowerCase();return c.case_id.toLowerCase().includes(q)||(c.failure_class||"").toLowerCase().includes(q)||(c.status||"").toLowerCase().includes(q)});
         const exportCsv=useCallback(()=>{
-            const rows=[["Case ID","Failure Class","Amount (paise)","Status","Group","Recovered"]];
+            const rows=[["Case ID","Failure Class","Amount","Status","Group","Recovered"]];
             cases.forEach(c=>rows.push([c.case_id,c.failure_class,c.amount_paise,c.status,c.group||"",c.recovered_amount_paise||""]));
             const blob=new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
             const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="recovery_ledger.csv";a.click();
@@ -453,31 +552,31 @@
 
         return(
             <>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                    <h1 style={{fontSize:20,fontWeight:800}}>Case Ledger</h1>
-                    <div style={{display:"flex",gap:8}}>
-                        <span className="tag">{cases.length} total</span>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <h1 style={{fontSize:18,fontWeight:800}}>Case Ledger</h1>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" placeholder="Search cases…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
+                        <span className="tag">{filtered.length}/{cases.length}</span>
                         <span className="tag-green">{cases.filter(c=>c.status==="recovered").length} recovered</span>
-                        <button className="btn btn-sm btn-outline" onClick={exportCsv}>Export CSV</button>
+                        <button className="btn btn-xs btn-outline" onClick={exportCsv}>Export CSV</button>
                     </div>
                 </div>
-
                 <div className="card">
                     <div style={{overflowX:"auto"}}>
                         <table><thead><tr><th>Case</th><th>Failure Class</th><th>Amount</th><th>Method</th><th>Status</th><th>Group</th><th>Recovered</th><th></th></tr></thead>
-                        <tbody>{cases.map(c=><Fragment key={c.case_id}>
+                        <tbody>{filtered.map(c=><Fragment key={c.case_id}>
                             <tr style={{cursor:"pointer",background:expandedId===c.case_id?"rgba(255,255,255,.03)":"transparent"}} onClick={()=>setExpandedId(expandedId===c.case_id?null:c.case_id)}>
-                                <td className="mono">{c.case_id}</td><td>{label(c.failure_class)}</td><td className="tabular">{fmt(c.amount_paise)}</td><td className="mono" style={{textTransform:"capitalize"}}>{c.method||"—"}</td>
+                                <td className="mono">{c.case_id.slice(0,12)}</td><td>{label(c.failure_class)}</td><td className="tabular">{fmt(c.amount_paise)}</td><td className="mono" style={{textTransform:"capitalize"}}>{c.method||"—"}</td>
                                 <td><span className={`pill ${c.status}`}>{c.status.replace(/_/g," ")}</span></td><td style={{color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group||"—"}</td>
                                 <td className="tabular">{c.recovered_amount_paise?fmt(c.recovered_amount_paise):"—"}</td>
-                                <td><button className="btn btn-sm btn-outline" onClick={e=>{e.stopPropagation();setExpandedId(expandedId===c.case_id?null:c.case_id)}}>{expandedId===c.case_id?"▾":"▸"}</button></td>
+                                <td><button className="btn btn-xs btn-outline" onClick={e=>{e.stopPropagation();setExpandedId(expandedId===c.case_id?null:c.case_id)}}>{expandedId===c.case_id?"▾":"▸"}</button></td>
                             </tr>
-                            {expandedId===c.case_id&&<tr><td colSpan="8" style={{padding:"12px 16px",background:"rgba(255,255,255,.02)",borderRadius:"0 0 8px 8px"}}>
-                                <div className="grid-4" style={{gap:8}}>
-                                    <div><span className="form-label">Payment Method</span><div className="mono" style={{fontSize:12}}>{c.method||"—"}</div></div>
-                                    <div><span className="form-label">Group</span><div style={{fontSize:12,color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group||"—"}</div></div>
-                                    <div><span className="form-label">Customer</span><div style={{fontSize:12}}>{c.customer||"—"}</div></div>
-                                    <div><span className="form-label">Actions</span><button className="btn btn-sm" onClick={e=>{e.stopPropagation();onCaseClick(c.case_id)}}>View Audit Trail</button></div>
+                            {expandedId===c.case_id&&<tr><td colSpan="8" style={{padding:"10px 14px",background:"rgba(255,255,255,.02)"}}>
+                                <div className="grid-4" style={{gap:6}}>
+                                    <div><span className="form-label">Method</span><div className="mono" style={{fontSize:11}}>{c.method||"—"}</div></div>
+                                    <div><span className="form-label">Group</span><div style={{fontSize:11,color:c.group==="treatment"?"var(--blu)":"var(--dim)"}}>{c.group||"—"}</div></div>
+                                    <div><span className="form-label">Customer</span><div style={{fontSize:11}}>{c.customer||"—"}</div></div>
+                                    <div><span className="form-label">Actions</span><button className="btn btn-xs" onClick={e=>{e.stopPropagation();onCaseClick(c.case_id)}}>Audit Trail</button></div>
                                 </div>
                             </td></tr>}
                         </Fragment>)}</tbody></table>
@@ -488,71 +587,93 @@
     }
 
     // ── Engine Tab ──
-    function EngineTab({gmv,setGmv,checkoutName,setCheckoutName,checkoutEmail,setCheckoutEmail,checkoutAmount,setCheckoutAmount,failureType,setFailureType,checkoutStep,simulateCheckout,latestCase,soundEnabled}){
+    function EngineTab({bandit,cusum,budget,incidents,API,notify}){
+        const[gmv,setGmv]=useState(100000);
+        const[settings,setSettings]=useState({rbi_max_retries:3,discount_ceiling_pct:5});
+        const[checkoutName,setCheckoutName]=useState("Rahul");
+        const[checkoutEmail,setCheckoutEmail]=useState("rahul@example.com");
+        const[checkoutAmount,setCheckoutAmount]=useState(1798);
+        const[failureType,setFailureType]=useState("INSUFFICIENT_FUNDS");
+        const[checkoutStep,setCheckoutStep]=useState("form");
+        const[latestCase,setLatestCase]=useState(null);
+
+        const simulateCheckout=useCallback(async()=>{
+            setCheckoutStep("processing");
+            try{const r=await fetch(`${API}/cases/recent?limit=1`);const d=await r.json();const c=d.cases?.[0];if(c){setLatestCase(c);setCheckoutStep("done");notify("Failure simulated — "+label(c.failure_class))}else{notify("No cases");setCheckoutStep("form")}}catch(e){notify("Failed");setCheckoutStep("form")}
+        },[notify]);
+
+        const saveSettings=async()=>{try{await fetch(`${API}/settings`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(settings)});notify("Settings saved")}catch(e){notify("Save failed")}};
+
         return(
             <>
-                <div style={{marginBottom:16}}>
-                    <h1 style={{fontSize:20,fontWeight:800}}>Engine Architecture & ROI Benchmark</h1>
-                    <p style={{fontSize:12,color:"var(--dim)",marginTop:4}}>Multi-agent pipeline, UCB1 bandit math, and merchant ROI calculator.</p>
+                <div style={{marginBottom:14}}>
+                    <h1 style={{fontSize:18,fontWeight:800}}>Engine Architecture & ROI</h1>
+                    <p style={{fontSize:11,color:"var(--dim)",marginTop:3}}>Pipeline, live bandit state, checkout simulator, and merchant ROI calculator.</p>
                 </div>
 
                 {/* Architecture DAG */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-                    <div className="card card-body"><div className="tag" style={{marginBottom:6}}>Node 01 · Ingestion</div><div style={{fontSize:13,fontWeight:700,marginBottom:4}}>Webhook Classifier</div><div style={{fontSize:10,color:"var(--dim)",lineHeight:1.5}}>Parses Razorpay webhook payload, classifies into 15 failure types with confidence score.</div></div>
-                    <div className="card card-body"><div className="tag" style={{marginBottom:6}}>Node 02 · Reasoning</div><div style={{fontSize:13,fontWeight:700,marginBottom:4}}>LLaMA-3 Diagnostician</div><div style={{fontSize:10,color:"var(--dim)",lineHeight:1.5}}>Groq-powered root cause synthesis from error codes, amounts, and customer context.</div></div>
-                    <div className="card card-body" style={{border:"1.5px solid var(--pur)"}}><div className="tag tag-black" style={{marginBottom:6}}>Node 03 · Safety</div><div style={{fontSize:13,fontWeight:700,marginBottom:4}}>Policy Gate</div><div style={{fontSize:10,color:"var(--dim)",lineHeight:1.5}}>7 deterministic rules: quiet hours, attempt caps, cooldowns, opt-outs, human approval.</div></div>
-                    <div className="card card-body"><div className="tag" style={{marginBottom:6}}>Node 04 · Dispatch</div><div style={{fontSize:13,fontWeight:700,marginBottom:4}}>Multi-Channel Executor</div><div style={{fontSize:10,color:"var(--dim)",lineHeight:1.5}}>UCB1 bandit selects channel (WhatsApp/SMS/Email/Voice/Retry). HMAC-signed links.</div></div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+                    {[{tag:"Node 01 · Ingestion",title:"Webhook Classifier",desc:"Parses Razorpay payload, classifies 15 failure types."},{tag:"Node 02 · Reasoning",title:"LLaMA-3 Diagnostician",desc:"Groq-powered root cause synthesis."},{tag:"Node 03 · Safety",title:"Policy Gate",desc:"7 rules: quiet hours, caps, cooldowns, opt-outs.",hl:true},{tag:"Node 04 · Dispatch",title:"UCB1 Executor",desc:"Bandit selects channel. HMAC-signed links."}].map((n,i)=>(
+                        <div key={i} className="card card-body" style={n.hl?{border:"1.5px solid var(--pur)"}:{}}>
+                            <div className="tag" style={{marginBottom:5}}>{n.tag}</div>
+                            <div style={{fontSize:12,fontWeight:700,marginBottom:3}}>{n.title}</div>
+                            <div style={{fontSize:9,color:"var(--dim)",lineHeight:1.5}}>{n.desc}</div>
+                        </div>
+                    ))}
                 </div>
 
-                <div className="grid-2" style={{marginBottom:20}}>
-                    {/* UCB1 Bandit */}
+                <div className="grid-2" style={{marginBottom:16}}>
+                    {/* Live Bandit */}
                     <div className="card">
-                        <div className="card-header"><h2>UCB1 Bandit Policy Optimizer</h2></div>
+                        <div className="card-header"><h2>🎰 UCB1 Bandit</h2>{bandit&&<span className="tag-blue tag">live</span>}</div>
                         <div className="card-body">
-                            <div style={{background:"#0a0f1a",color:"#fff",padding:"10px 14px",borderRadius:6,fontFamily:"var(--mono)",fontSize:12,marginBottom:12}}>
-                                Score(Channel_i) = μ_i + c · √(2 · ln N / n_i)
+                            <div style={{background:"#0a0f1a",color:"#fff",padding:"8px 12px",borderRadius:5,fontFamily:"var(--mono)",fontSize:11,marginBottom:10}}>
+                                Score(Ch_i) = μ_i + c · √(2·ln N / n_i)
                             </div>
-                            {[
-                                {name:"WhatsApp Concierge",ucb:0.92,pulls:428,rate:"81.2%"},
-                                {name:"SMS Nudge",ucb:0.87,pulls:312,rate:"77.4%"},
-                                {name:"Email Reminder",ucb:0.81,pulls:195,rate:"64.8%"},
-                                {name:"Voice Follow-up",ucb:0.74,pulls:87,rate:"58.1%"},
-                            ].map((p,i)=>(
-                                <div key={i} style={{background:"rgba(255,255,255,.03)",padding:"8px 12px",borderRadius:6,border:"1px solid var(--bdr)",display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6}}>
-                                    <span>{p.name}</span>
-                                    <span className="mono" style={{fontWeight:600}}>{p.rate} (UCB: {p.ucb})</span>
+                            {bandit?Object.entries(bandit).map(([ch,v])=>(
+                                <div key={ch} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:11}}>
+                                    <span style={{textTransform:"capitalize"}}>{ch}</span>
+                                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                                        <span className="mono" style={{fontSize:10,color:"var(--dim)"}}>{v.pulls} pulls</span>
+                                        <div style={{width:50,height:4,background:"rgba(255,255,255,.06)",borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:(v.mean_recovery*100)+"%",background:"var(--blu)",borderRadius:2}}></div></div>
+                                        <span className="mono" style={{fontSize:11,fontWeight:600,width:36,textAlign:"right"}}>{(v.mean_recovery*100).toFixed(0)}%</span>
+                                    </div>
                                 </div>
-                            ))}
+                            )):<div style={{color:"var(--dim)",fontSize:11,textAlign:"center",padding:20}}>No bandit data</div>}
                         </div>
                     </div>
 
-                    {/* Live Checkout Simulator */}
+                    {/* Checkout Simulator */}
                     <div className="card">
-                        <div className="card-header"><h2>Live Checkout Simulator</h2><span className="tag">{failureType}</span></div>
+                        <div className="card-header"><h2>🧪 Checkout Simulator</h2><span className="tag">{failureType}</span></div>
                         <div className="card-body">
                             {checkoutStep==="form"?<>
-                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                                    <div><label className="form-label">Customer Name</label><input className="form-input" value={checkoutName} onChange={e=>setCheckoutName(e.target.value)}/></div>
-                                    <div><label className="form-label">Customer Email</label><input className="form-input" value={checkoutEmail} onChange={e=>setCheckoutEmail(e.target.value)}/></div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                                    <div><label className="form-label">Name</label><input className="form-input" value={checkoutName} onChange={e=>setCheckoutName(e.target.value)}/></div>
+                                    <div><label className="form-label">Email</label><input className="form-input" value={checkoutEmail} onChange={e=>setCheckoutEmail(e.target.value)}/></div>
                                     <div><label className="form-label">Amount (₹)</label><input className="form-input" type="number" value={checkoutAmount} onChange={e=>setCheckoutAmount(Number(e.target.value))}/></div>
-                                    <div><label className="form-label">Failure Vector</label>
-                                        <select className="form-input" value={failureType} onChange={e=>setFailureType(e.target.value)}>
-                                            {FAILURE_TYPES.map(f=><option key={f} value={f}>{label(f)}</option>)}
-                                        </select>
-                                    </div>
+                                    <div><label className="form-label">Failure</label><select className="form-input" value={failureType} onChange={e=>setFailureType(e.target.value)}>{FAILURE_TYPES.map(f=><option key={f} value={f}>{label(f)}</option>)}</select></div>
                                 </div>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                                    <span style={{fontSize:12}}>Order: <strong className="tabular">{fmtCurrency(checkoutAmount)}</strong></span>
+                                    <span style={{fontSize:11}}>Order: <strong className="tabular">₹{checkoutAmount.toLocaleString("en-IN")}</strong></span>
                                     <button className="btn btn-sm" onClick={simulateCheckout}>Simulate Failure</button>
                                 </div>
-                            </>:checkoutStep==="processing"?<div style={{textAlign:"center",padding:24}}><div className="spinner"></div><div style={{fontSize:12,color:"var(--dim)"}}>Processing…</div></div>
-                            :<div style={{textAlign:"center",padding:16}}>
-                                <div style={{fontSize:28,marginBottom:8}}>✅</div>
-                                <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>Failure simulated</div>
-                                <div style={{fontSize:11,color:"var(--dim)",marginBottom:12}}>Agent classified as <strong>{latestCase?label(latestCase.failure_class):failureType}</strong></div>
-                                <div className="grid-2" style={{gap:8,marginBottom:12}}>
-                                    <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:6,textAlign:"center"}}><div className="form-label">Amount</div><div className="mono" style={{fontWeight:700}}>{latestCase?fmt(latestCase.amount_paise):fmtCurrency(checkoutAmount)}</div></div>
-                                    <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:6,textAlign:"center"}}><div className="form-label">Status</div><div className="mono" style={{fontWeight:700,color:"var(--blu)"}}>{latestCase?.status||"open"}</div></div>
+                            </>:checkoutStep==="processing"?<div style={{textAlign:"center",padding:20}}><div className="spinner"></div><div style={{fontSize:11,color:"var(--dim)"}}>Processing…</div>
+                            {/* Stepper */}
+                            <div className="stepper">
+                                {[{l:"Classify",s:1},{l:"Diagnose",s:2},{l:"Gate",s:3},{l:"Dispatch",s:4}].map((s,i)=><div key={i} className={`step ${i===0?"active":""}`}><div className="step-dot">{i===0?"…":s.s}</div><div>{s.l}</div></div>)}
+                            </div>
+                            </div>
+                            :<div style={{textAlign:"center",padding:12}}>
+                                <div style={{fontSize:24,marginBottom:6}}>✅</div>
+                                <div style={{fontSize:12,fontWeight:600,marginBottom:3}}>Failure simulated</div>
+                                <div style={{fontSize:10,color:"var(--dim)",marginBottom:10}}>Classified as <strong>{latestCase?label(latestCase.failure_class):failureType}</strong></div>
+                                <div className="stepper" style={{marginBottom:10}}>
+                                    {[{l:"Classify",s:1},{l:"Diagnose",s:2},{l:"Gate",s:3},{l:"Dispatch",s:4}].map((s,i)=><div key={i} className="step done"><div className="step-dot">✓</div><div>{s.l}</div></div>)}
+                                </div>
+                                <div className="grid-2" style={{gap:6,marginBottom:10}}>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="form-label">Amount</div><div className="mono" style={{fontWeight:700,fontSize:12}}>{latestCase?fmt(latestCase.amount_paise):"₹"+checkoutAmount}</div></div>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="form-label">Status</div><div className="mono" style={{fontWeight:700,fontSize:12,color:"var(--blu)"}}>{latestCase?.status||"open"}</div></div>
                                 </div>
                                 <button className="btn btn-sm btn-outline" onClick={()=>setCheckoutStep("form")}>Simulate Another</button>
                             </div>}
@@ -560,49 +681,238 @@
                     </div>
                 </div>
 
-                {/* ROI Calculator */}
-                <div className="card" style={{marginBottom:20}}>
-                    <div className="card-header"><h2>Merchant ROI & Profit Lift Calculator</h2></div>
-                    <div className="card-body">
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                            <span style={{fontWeight:700,fontSize:13}}>Monthly Merchant GMV</span>
-                            <span style={{fontSize:20,fontWeight:800,fontFamily:"var(--mono)"}}>{fmtCurrency(gmv)}</span>
+                {/* CUSUM + Budget + Incidents */}
+                <div className="grid-3" style={{marginBottom:16}}>
+                    {cusum&&<div className="card card-body">
+                        <div className="metric-label">📈 CUSUM Detector</div>
+                        <div className="grid-2" style={{gap:6,marginTop:8}}>
+                            <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Positive</div><div className="sec-val">{cusum.positive_cusum}</div></div>
+                            <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Negative</div><div className="sec-val">{cusum.negative_cusum}</div></div>
                         </div>
-                        <input type="range" min="10000" max="5000000" step="10000" value={gmv} onChange={e=>setGmv(Number(e.target.value))} style={{width:"100%",accentColor:"var(--blu)",marginBottom:16}}/>
+                        <div style={{fontSize:9,color:"var(--dim)",textAlign:"center",marginTop:6}}>baseline: {(cusum.baseline*100).toFixed(0)}% · {cusum.observations} obs</div>
+                    </div>}
+                    {budget&&<div className="card card-body">
+                        <div className="metric-label">💰 Intervention Budget</div>
+                        <div style={{marginTop:8}}>
+                            <div className="bar-g"><div className="bar-l"><span>Used</span><span>{budget.total-budget.remaining}/{budget.total}</span></div><div className="bar"><div className="bf t" style={{width:(budget.utilization*100)+"%"}}></div></div></div>
+                            <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>
+                                {Object.entries(budget.by_channel||{}).slice(0,5).map(([ch,v])=><span key={ch} className="tag" style={{textTransform:"capitalize"}}>{ch}: {v}</span>)}
+                            </div>
+                        </div>
+                    </div>}
+                    {incidents&&<div className="card card-body">
+                        <div className="metric-label">🔥 Incidents</div>
+                        <div style={{marginTop:6}}>
+                            {(incidents.incidents||[]).slice(0,3).map(inc=><div key={inc.id} style={{padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:10}}>
+                                <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600}}>{inc.title}</span><span style={{color:inc.severity==="high"?"var(--red)":"var(--yel)",fontSize:8,textTransform:"uppercase"}}>{inc.severity}</span></div>
+                            </div>)}
+                        </div>
+                    </div>}
+                </div>
+
+                {/* ROI Calculator */}
+                <div className="card" style={{marginBottom:16}}>
+                    <div className="card-header"><h2>Merchant ROI Calculator</h2></div>
+                    <div className="card-body">
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <span style={{fontWeight:700,fontSize:12}}>Monthly GMV</span>
+                            <span style={{fontSize:18,fontWeight:800,fontFamily:"var(--mono)"}}>₹{gmv.toLocaleString("en-IN")}</span>
+                        </div>
+                        <input type="range" min="10000" max="5000000" step="10000" value={gmv} onChange={e=>setGmv(Number(e.target.value))} style={{width:"100%",accentColor:"var(--blu)",marginBottom:14}}/>
                         <div className="grid-3">
-                            <div className="metric"><div className="metric-label">Lost Without Agent</div><div className="metric-value tabular">{fmtCurrency(gmv*0.088)}</div></div>
-                            <div className="metric primary"><div className="metric-label">Recovered by Agent</div><div className="metric-value tabular">{fmtCurrency(gmv*0.069)}</div></div>
-                            <div className="metric"><div className="metric-label">Annual Profit Lift</div><div className="metric-value tabular">{fmtCurrency(gmv*0.069*12)}</div></div>
+                            <div className="metric"><div className="metric-label">Lost Without Agent</div><div className="metric-value tabular">₹{(gmv*0.088).toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
+                            <div className="metric primary"><div className="metric-label">Recovered by Agent</div><div className="metric-value tabular">₹{(gmv*0.069).toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
+                            <div className="metric"><div className="metric-label">Annual Profit Lift</div><div className="metric-value tabular">₹{(gmv*0.069*12).toLocaleString("en-IN",{maximumFractionDigits:0})}</div></div>
                         </div>
                     </div>
                 </div>
 
-                {/* How It Works */}
-                <div className="card" style={{marginBottom:20}}>
+                {/* Settings */}
+                <div className="card">
+                    <div className="card-header"><h2>⚙️ Engine Settings</h2></div>
+                    <div className="card-body">
+                        <div className="grid-3" style={{gap:10}}>
+                            <div><label className="form-label">RBI Retry Cap</label><select className="form-input" value={settings.rbi_max_retries} onChange={e=>setSettings({...settings,rbi_max_retries:Number(e.target.value)})}><option value={2}>2 (Strict)</option><option value={3}>3 (Standard)</option><option value={4}>4 (High Tolerance)</option></select></div>
+                            <div><label className="form-label">Discount Ceiling</label><select className="form-input" value={settings.discount_ceiling_pct} onChange={e=>setSettings({...settings,discount_ceiling_pct:Number(e.target.value)})}><option value={3}>3%</option><option value={5}>5%</option><option value={8}>8%</option></select></div>
+                            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn btn-sm" onClick={saveSettings}>Save Settings</button></div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // ── Tools Tab ──
+    function ToolsTab({API,notify}){
+        const[waPhone,setWaPhone]=useState("+919876543210");
+        const[waFC,setWaFC]=useState("INSUFFICIENT_FUNDS");
+        const[waMsg,setWaMsg]=useState(null);
+        const[currFrom,setCurrFrom]=useState("INR");
+        const[currTo,setCurrTo]=useState("USD");
+        const[currAmt,setCurrAmt]=useState(179860);
+        const[currResult,setCurrResult]=useState(null);
+        const[diagPayload,setDiagPayload]=useState('{"error_code":"INSUFFICIENT_FUNDS","amount_paise":179860,"customer_name":"Rahul"}');
+        const[diagResult,setDiagResult]=useState(null);
+        const[provider,setProvider]=useState("mock");
+
+        const loadWaPreview=async()=>{try{const r=await fetch(`${API}/preview/whatsapp?failure_class=${waFC}&phone=${encodeURIComponent(waPhone)}`);if(r.ok)setWaMsg(await r.json())}catch(e){}};
+        const convertCurrency=async()=>{try{const r=await fetch(`${API}/currency/convert?amount_paise=${currAmt}&from_currency=${currFrom}&to_currency=${currTo}`);if(r.ok)setCurrResult(await r.json())}catch(e){}};
+        const runDiagnose=async()=>{try{const r=await fetch(`${API}/diagnose`,{method:"POST",headers:{"Content-Type":"application/json"},body:diagPayload});if(r.ok)setDiagResult(await r.json())}catch(e){notify("Diagnose failed")}};
+        const switchProvider=async(p)=>{try{await fetch(`${API}/provider`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider:p})});setProvider(p);notify("Provider: "+p)}catch(e){}};
+
+        useEffect(()=>{fetch(`${API}/provider`).then(r=>r.ok?r.json():null).then(d=>{if(d)setProvider(d.provider)}).catch(()=>{})},[API]);
+
+        return(
+            <>
+                <div style={{marginBottom:14}}><h1 style={{fontSize:18,fontWeight:800}}>Tools</h1><p style={{fontSize:11,color:"var(--dim)",marginTop:3}}>WhatsApp preview, currency converter, LLM diagnosis, provider switching.</p></div>
+
+                <div className="grid-2" style={{marginBottom:16}}>
+                    {/* WhatsApp Preview */}
+                    <div className="card">
+                        <div className="card-header"><h2>📱 WhatsApp Preview</h2></div>
+                        <div className="card-body">
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                                <div><label className="form-label">Phone</label><input className="form-input" value={waPhone} onChange={e=>setWaPhone(e.target.value)}/></div>
+                                <div><label className="form-label">Failure Class</label><select className="form-input" value={waFC} onChange={e=>setWaFC(e.target.value)}>{FAILURE_TYPES.map(f=><option key={f} value={f}>{label(f)}</option>)}</select></div>
+                            </div>
+                            <button className="btn btn-sm" onClick={loadWaPreview} style={{marginBottom:12}}>Load Preview</button>
+                            {waMsg&&<div className="wa-bubble">
+                                {waMsg.header&&<div className="wa-header">{waMsg.header}</div>}
+                                <div>{waMsg.body}</div>
+                                {waMsg.footer&&<div className="wa-footer">{waMsg.footer}</div>}
+                                {waMsg.buttons&&<div>{waMsg.buttons.map((b,i)=><span key={i} className={`wa-btn ${b.type==="url"?"primary":"secondary"}`}>{b.text}</span>)}</div>}
+                                <div style={{fontSize:9,color:"var(--dim)",marginTop:8}}>{waMsg.character_count} chars · {waMsg.within_limit?"✅ within limit":"⚠️ exceeds"}</div>
+                            </div>}
+                        </div>
+                    </div>
+
+                    {/* Currency Converter */}
+                    <div className="card">
+                        <div className="card-header"><h2>💱 Currency Converter</h2></div>
+                        <div className="card-body">
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+                                <div><label className="form-label">Amount (paise)</label><input className="form-input" type="number" value={currAmt} onChange={e=>setCurrAmt(Number(e.target.value))}/></div>
+                                <div><label className="form-label">From</label><select className="form-input" value={currFrom} onChange={e=>setCurrFrom(e.target.value)}><option>INR</option><option>USD</option><option>EUR</option></select></div>
+                                <div><label className="form-label">To</label><select className="form-input" value={currTo} onChange={e=>setCurrTo(e.target.value)}><option>USD</option><option>INR</option><option>EUR</option></select></div>
+                            </div>
+                            <button className="btn btn-sm" onClick={convertCurrency} style={{marginBottom:10}}>Convert</button>
+                            {currResult&&<div className="grid-2" style={{gap:6}}>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="form-label">Original</div><div className="mono" style={{fontWeight:700}}>{currResult.original.display}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="form-label">Converted</div><div className="mono" style={{fontWeight:700,color:"var(--grn)"}}>{currResult.converted.display}</div></div>
+                            </div>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid-2" style={{marginBottom:16}}>
+                    {/* LLM Diagnose */}
+                    <div className="card">
+                        <div className="card-header"><h2>🧠 LLaMA-3 Diagnosis</h2></div>
+                        <div className="card-body">
+                            <label className="form-label">Failure Context (JSON)</label>
+                            <textarea className="form-input" value={diagPayload} onChange={e=>setDiagPayload(e.target.value)} rows={3}/>
+                            <button className="btn btn-sm" onClick={runDiagnose} style={{margin:8}}>Run Diagnosis</button>
+                            {diagResult&&<div style={{background:"#0a0f1a",padding:10,borderRadius:5,fontFamily:"var(--mono)",fontSize:10,whiteSpace:"pre-wrap",maxHeight:150,overflow:"auto"}}>{JSON.stringify(diagResult,null,2)}</div>}
+                        </div>
+                    </div>
+
+                    {/* Provider Switching */}
+                    <div className="card">
+                        <div className="card-header"><h2>🔌 LLM Provider</h2><span className="tag">{provider}</span></div>
+                        <div className="card-body">
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                {["mock","ollama","claude"].map(p=><button key={p} className={`btn btn-sm ${provider===p?"":"btn-outline"}`} onClick={()=>switchProvider(p)} style={provider===p?{background:p==="mock"?"var(--dim)":p==="ollama"?"var(--blu)":"var(--pur)"}:{}}>{p}</button>)}
+                            </div>
+                            <div style={{fontSize:10,color:"var(--dim)",marginTop:10}}>
+                                {provider==="mock"&&"Using deterministic rule-based diagnosis (no API calls)."}
+                                {provider==="ollama"&&"Using local Ollama model for diagnosis."}
+                                {provider==="claude"&&"Using Claude API for diagnosis."}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pipeline Architecture */}
+                <div className="card">
                     <div className="card-header"><h2>Pipeline Architecture</h2></div>
                     <div className="card-body">
                         <div className="arch-flow">
-                            <span className="arch-node">Webhook In</span><span className="arch-arrow">→</span>
-                            <span className="arch-node">Classifier</span><span className="arch-arrow">→</span>
-                            <span className="arch-node">LLaMA-3</span><span className="arch-arrow">→</span>
-                            <span className="arch-node highlight">Policy Gate</span><span className="arch-arrow">→</span>
-                            <span className="arch-node">UCB1 Bandit</span><span className="arch-arrow">→</span>
-                            <span className="arch-node">Executor</span><span className="arch-arrow">→</span>
-                            <span className="arch-node">Recovery</span>
+                            {["Webhook In","Classifier","LLaMA-3","Policy Gate","UCB1 Bandit","Executor","Recovery"].map((n,i)=>(
+                                <Fragment key={i}>{i>0&&<span className="arch-arrow">→</span>}<span className={`arch-node ${n==="Policy Gate"?"highlight":""}`}>{n}</span></Fragment>
+                            ))}
                         </div>
-                        <div style={{fontSize:11,color:"var(--dim)",textAlign:"center",marginTop:8}}>Every decision is policy-gated, auditable, and measured against a randomized control group.</div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // ── Security Tab ──
+    function SecurityTab({security,API,notify}){
+        const[adversarialResult,setAdversarialResult]=useState(null);
+        const[chainResult,setChainResult]=useState(null);
+        const[testing,setTesting]=useState(false);
+
+        const runAdversarial=async()=>{setTesting(true);try{const r=await fetch(`${API}/security/adversarial-test`,{method:"POST"});if(r.ok){setAdversarialResult(await r.json());notify("Adversarial test complete")}else notify("Test failed")}catch(e){notify("Failed")}setTesting(false)};
+        const verifyChain=async()=>{try{const r=await fetch(`${API}/audit/chain/verify`);if(r.ok)setChainResult(await r.json())}catch(e){}};
+
+        return(
+            <>
+                <div style={{marginBottom:14}}><h1 style={{fontSize:18,fontWeight:800}}>Security Posture</h1><p style={{fontSize:11,color:"var(--dim)",marginTop:3}}>Threat model, audit chain verification, adversarial testing.</p></div>
+
+                {/* Security Overview */}
+                {security&&<div className="card" style={{marginBottom:16}}>
+                    <div className="card-header"><h2>🛡 Security Report</h2><span className={`badge ${security.overall_status==="PASS"?"":"warn"}`}>{security.overall_status}</span></div>
+                    <div className="card-body">
+                        <div className="sec-grid">
+                            <div className="sec-box"><div className="sec-label">Threats Mitigated</div><div className="sec-val" style={{color:"var(--grn)"}}>{security.threat_model?.mitigated}/{security.threat_model?.total}</div></div>
+                            <div className="sec-box"><div className="sec-label">Adversarial Test</div><div className="sec-val" style={{color:security.adversarial_test?.pass?"var(--grn)":"var(--red)"}}>{security.adversarial_test?.pass?"PASS":"FAIL"}</div></div>
+                            <div className="sec-box"><div className="sec-label">Audit Chain</div><div className="sec-val" style={{color:security.audit_chain?.valid?"var(--grn)":"var(--red)"}}>{security.audit_chain?.valid?"VALID":"BROKEN"}</div><div style={{fontSize:9,color:"var(--dim)"}}>{security.audit_chain?.total_links} links</div></div>
+                        </div>
+                        {security.adversarial_test&&<div style={{background:"rgba(34,197,94,.06)",border:"1px solid rgba(34,197,94,.15)",borderRadius:6,padding:"8px 12px",fontSize:11,color:"var(--grn)",marginTop:10}}>
+                            ✅ {security.adversarial_test.cases_tested} adversarial cases · {security.adversarial_test.cases_terminated} terminated · 0 violations
+                        </div>}
+                    </div>
+                </div>}
+
+                <div className="grid-2" style={{marginBottom:16}}>
+                    {/* Adversarial Test */}
+                    <div className="card">
+                        <div className="card-header"><h2>🧪 Adversarial LLM Test</h2></div>
+                        <div className="card-body">
+                            <p style={{fontSize:10,color:"var(--dim)",marginBottom:10}}>Tests prompt injection resistance and policy bypass attempts.</p>
+                            <button className="btn btn-sm btn-red" onClick={runAdversarial} disabled={testing}>{testing?"Running…":"Run Adversarial Test"}</button>
+                            {adversarialResult&&<div style={{background:"#0a0f1a",padding:10,borderRadius:5,fontFamily:"var(--mono)",fontSize:10,whiteSpace:"pre-wrap",maxHeight:200,overflow:"auto",marginTop:10}}>{JSON.stringify(adversarialResult,null,2)}</div>}
+                        </div>
+                    </div>
+
+                    {/* Audit Chain */}
+                    <div className="card">
+                        <div className="card-header"><h2>🔗 Audit Chain Verification</h2></div>
+                        <div className="card-body">
+                            <p style={{fontSize:10,color:"var(--dim)",marginBottom:10}}>Verifies SHA-256 hash chain integrity across all audit events.</p>
+                            <button className="btn btn-sm" onClick={verifyChain}>Verify Chain</button>
+                            {chainResult&&<div style={{marginTop:10}}>
+                                <div className="grid-3" style={{gap:6}}>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Valid</div><div className="sec-val" style={{color:chainResult.valid?"var(--grn)":"var(--red)",fontSize:14}}>{chainResult.valid?"YES":"NO"}</div></div>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Links</div><div className="sec-val" style={{fontSize:14}}>{chainResult.total_links}</div></div>
+                                    <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5,textAlign:"center"}}><div className="sec-label">Broken</div><div className="sec-val" style={{color:chainResult.broken_links===0?"var(--grn)":"var(--red)",fontSize:14}}>{chainResult.broken_links}</div></div>
+                                </div>
+                            </div>}
+                        </div>
                     </div>
                 </div>
 
-                {/* CTA */}
-                <div className="cta-card">
-                    <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Built for Razorpay AI Buildathon 2026</div>
-                    <div style={{fontSize:12,color:"var(--sec)",marginBottom:14}}>Track 03 — AI Revenue Recovery. Measured money recovered with compliant escalation, stopping rules, and audit trail.</div>
-                    <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
-                        <button className="btn" onClick={()=>window.open("/docs","_blank")}>Explore API</button>
-                        <button className="btn btn-outline" onClick={()=>window.open("https://github.com/hemv-857/rzp-recovery-agent","_blank")}>View Source</button>
+                {/* Threat Model */}
+                {security?.threat_model?.threats&&<div className="card">
+                    <div className="card-header"><h2>Threat Model</h2></div>
+                    <div style={{overflowX:"auto"}}>
+                        <table><thead><tr><th>Threat</th><th>Severity</th><th>Mitigation</th><th>Status</th></tr></thead>
+                        <tbody>{security.threat_model.threats.map((t,i)=>(
+                            <tr key={i}><td style={{fontWeight:600}}>{t.name}</td><td><span className={`tag ${t.severity==="critical"?"tag-red":t.severity==="high"?"tag-yellow":"tag-blue"}`}>{t.severity}</span></td><td style={{fontSize:10,color:"var(--dim)"}}>{t.mitigation}</td><td><span className="tag tag-green">mitigated</span></td></tr>
+                        ))}</tbody></table>
                     </div>
-                </div>
+                </div>}
             </>
         );
     }
@@ -611,38 +921,64 @@
     function AuditModal({open,onClose,caseId,API}){
         const[detail,setDetail]=useState(null);
         const[loading,setLoading]=useState(true);
-        useEffect(()=>{if(caseId){setLoading(true);fetch(`${API}/cases/${caseId}/detail`).then(r=>r.ok?r.json():Promise.reject()).then(d=>{setDetail(d);setLoading(false)}).catch(()=>setLoading(false))}},[caseId,API]);
+        const[decision,setDecision]=useState(null);
+        const modalRef=useRef(null);
+
+        useEffect(()=>{if(caseId){setLoading(true);setDecision(null);Promise.all([
+            fetch(`${API}/cases/${caseId}/detail`).then(r=>r.ok?r.json():null),
+            fetch(`${API}/cases/${caseId}/decision`).then(r=>r.ok?r.json():null).catch(()=>null),
+        ]).then(([d,dec])=>{setDetail(d);setDecision(dec);setLoading(false)}).catch(()=>setLoading(false))}},[caseId,API]);
+
+        // Escape key handler
+        useEffect(()=>{if(!open)return;const handler=e=>{if(e.key==="Escape")onClose()};window.addEventListener("keydown",handler);return()=>window.removeEventListener("keydown",handler)},[open,onClose]);
+
         if(!open)return null;
         const actorColor={"classifier":"var(--blu)","selector":"var(--pur)","executor":"var(--grn)","policy":"var(--yel)","system":"var(--dim)"};
         const eventIcon={"case.created":"📝","action.scheduled":"⏰","action.executed":"▶️","action.deferred":"⏸️","action.blocked":"🚫","case.written_off":"🗑️","case.recovered":"✅"};
+
         return(
-            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
-                <div className="modal-c" style={{maxWidth:800,maxHeight:"85vh",overflow:"auto"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div className="modal on" onClick={e=>{if(e.target===e.currentTarget)onClose()}} ref={modalRef}>
+                <div className="modal-c" style={{maxWidth:750,maxHeight:"85vh",overflow:"auto"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                         <h2>Audit Trail{detail?" — "+detail.case?.case_id:""}</h2>
-                        <button className="btn btn-sm btn-outline" onClick={onClose}>Close</button>
+                        <button className="btn btn-sm btn-outline" onClick={onClose}>✕</button>
                     </div>
-                    {loading?<div style={{textAlign:"center",padding:40}}><div className="spinner"></div><div style={{fontSize:12,color:"var(--dim)"}}>Loading audit trail…</div></div>
-                    :!detail?<div style={{textAlign:"center",padding:40,color:"var(--red)"}}>Failed to load</div>
+                    {loading?<div style={{textAlign:"center",padding:30}}><div className="spinner"></div><div style={{fontSize:11,color:"var(--dim)"}}>Loading…</div></div>
+                    :!detail?<div style={{textAlign:"center",padding:30,color:"var(--red)"}}>Failed to load</div>
                     :<>
-                        <div className="grid-3" style={{gap:8,marginBottom:16}}>
-                            <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:6}}><div className="form-label">Failure Class</div><div style={{fontSize:13,fontWeight:600}}>{label(detail.case?.failure_class)}</div></div>
-                            <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:6}}><div className="form-label">Amount</div><div className="mono" style={{fontSize:13,fontWeight:600}}>{detail.case?.amount_paise?fmt(detail.case.amount_paise):"—"}</div></div>
-                            <div style={{background:"rgba(255,255,255,.04)",padding:10,borderRadius:6}}><div className="form-label">Status</div><div><span className={`pill ${detail.case?.status}`}>{detail.case?.status?.replace(/_/g," ")}</span></div></div>
+                        <div className="grid-3" style={{gap:6,marginBottom:14}}>
+                            <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5}}><div className="form-label">Failure</div><div style={{fontSize:12,fontWeight:600}}>{label(detail.case?.failure_class)}</div></div>
+                            <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5}}><div className="form-label">Amount</div><div className="mono tabular" style={{fontSize:12,fontWeight:600}}>{detail.case?.amount_paise?fmt(detail.case.amount_paise):"—"}</div></div>
+                            <div style={{background:"rgba(255,255,255,.04)",padding:8,borderRadius:5}}><div className="form-label">Status</div><span className={`pill ${detail.case?.status}`}>{detail.case?.status?.replace(/_/g," ")}</span></div>
                         </div>
-                        <div style={{borderTop:"1px solid var(--bdr)",paddingTop:12}}>
-                            <div style={{fontSize:11,fontWeight:600,color:"var(--dim)",marginBottom:8,textTransform:"uppercase",letterSpacing:".05em"}}>Event Log ({detail.audit?.length||0} events)</div>
-                            <div style={{maxHeight:400,overflowY:"auto"}}>
+
+                        {/* Decision Inspector */}
+                        {decision&&<div style={{border:"1px solid var(--bdr)",borderRadius:8,padding:12,marginBottom:14,background:"rgba(255,255,255,.02)"}}>
+                            <div style={{fontSize:11,fontWeight:700,marginBottom:8}}>🧠 Decision Inspector</div>
+                            <div className="grid-3" style={{gap:6,marginBottom:8}}>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">EV (Selected)</div><div className="mono" style={{fontSize:12,fontWeight:700,color:"var(--grn)"}}>{decision.selected?.ev?.toFixed(3)||"—"}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Confidence</div><div className="mono" style={{fontSize:12,fontWeight:700}}>{decision.selected?.confidence?.toFixed(2)||"—"}</div></div>
+                                <div style={{background:"rgba(255,255,255,.04)",padding:6,borderRadius:4,textAlign:"center"}}><div className="form-label">Reason</div><div style={{fontSize:10}}>{decision.selected?.why||"—"}</div></div>
+                            </div>
+                            {decision.rejected&&decision.rejected.length>0&&<div>
+                                <div style={{fontSize:9,color:"var(--dim)",marginBottom:4,textTransform:"uppercase",letterSpacing:".04em"}}>Rejected alternatives</div>
+                                {decision.rejected.map((r,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:10}}>
+                                    <span>{r.action}</span><span className="mono" style={{color:"var(--dim)"}}>EV: {r.ev?.toFixed(3)}</span>
+                                </div>)}
+                            </div>}
+                        </div>}
+
+                        {/* Event Log */}
+                        <div style={{borderTop:"1px solid var(--bdr)",paddingTop:10}}>
+                            <div style={{fontSize:10,fontWeight:600,color:"var(--dim)",marginBottom:6,textTransform:"uppercase",letterSpacing:".04em"}}>Event Log ({detail.audit?.length||0})</div>
+                            <div style={{maxHeight:350,overflowY:"auto"}}>
                                 {detail.audit?.map(e=>(
-                                    <div key={e.event_id} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:12}}>
-                                        <div style={{width:140,color:"var(--dim)",fontSize:10,whiteSpace:"nowrap",fontFamily:"var(--mono)"}}>{new Date(e.ts).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})}</div>
-                                        <div style={{width:70,fontWeight:600,fontSize:10,textTransform:"uppercase",color:actorColor[e.actor]||"var(--dim)"}}>{e.actor}</div>
+                                    <div key={e.event_id} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:11}}>
+                                        <div style={{width:120,color:"var(--dim)",fontSize:9,whiteSpace:"nowrap",fontFamily:"var(--mono)"}}>{new Date(e.ts).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit",day:"2-digit",month:"short"})}</div>
+                                        <div style={{width:60,fontWeight:600,fontSize:9,textTransform:"uppercase",color:actorColor[e.actor]||"var(--dim)"}}>{e.actor}</div>
                                         <div style={{flex:1}}>
-                                            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
-                                                <span>{eventIcon[e.event_type]||"📌"}</span>
-                                                <span style={{fontWeight:600,textTransform:"capitalize"}}>{e.event_type.replace(/[._]/g," ")}</span>
-                                            </div>
-                                            <div style={{color:"var(--dim)",fontSize:11,marginLeft:18}}>
+                                            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:1}}><span>{eventIcon[e.event_type]||"📌"}</span><span style={{fontWeight:600,textTransform:"capitalize",fontSize:10}}>{e.event_type.replace(/[._]/g," ")}</span></div>
+                                            <div style={{color:"var(--dim)",fontSize:10,marginLeft:16}}>
                                                 {e.event_type==="case.created"&&`classified as ${e.classified_as} (${(e.confidence*100).toFixed(0)}%) — ${e.error_description}`}
                                                 {e.event_type==="action.scheduled"&&`${e.type} in ${e.delay_min}min — P(recovery) ${(e.recovery_probability*100).toFixed(1)}% — ${e.why}`}
                                                 {e.event_type==="action.executed"&&`${e.type} — ${e.decision}: ${e.reason}`}
