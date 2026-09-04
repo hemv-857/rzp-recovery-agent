@@ -124,24 +124,12 @@ paused, retries exceeded, case expiry."
 
 **Say this:**
 
-"Different failures, different strategies, different results.
-
-Insufficient funds: 79.7% treatment vs 28.8% control. Salary-cycle
-retries work — people get paid on the 1st and 5th.
-
-Hard decline: 37.8% vs 9.5%. Never re-charge the same card.
-Send an alternate link instead. The classifier knows this is
-a compliance boundary.
-
-Invoice overdue: 73.2% vs 6.2%. Highest lift. Because these
-escalate to humans — voice calls with Hinglish TTS scripts,
-payment link sent by SMS in parallel. The voice provider
-interface is pluggable — mock for demo, real BSP in production.
-
-One size doesn't fit all. The classifier determines the strategy.
-The strategy determines the outcome. Portfolio optimization
-selects the best subset of cases for human-review capacity
-using 0/1 knapsack DP."
+"Different failures, different strategies. Insufficient funds:
+79.7% vs 28.8% — salary-cycle retries work. Hard decline:
+37.8% vs 9.5% — never re-charge, send an alternate link.
+Invoice overdue: 73.2% vs 6.2% — highest lift because it
+escalates to humans. One size doesn't fit all. The classifier
+picks the strategy. The strategy determines the outcome."
 
 ---
 
