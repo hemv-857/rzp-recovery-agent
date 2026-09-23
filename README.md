@@ -426,3 +426,12 @@ answers *what bounded, compliant action recovers the money already lost — and
 did it actually work vs control*. The classifier is a pluggable seam ready for
 Vulcan-enriched failure signals when a merchant-facing API appears. Details and
 honest caveats: [FUTURE_ROADMAP.md](FUTURE_ROADMAP.md).
+
+## Related Projects
+
+Sibling recovery agents with the same control-group lift methodology, different payment processors:
+
+| Repo | Processor |
+|------|-----------|
+| [rzp-recovery-agent](https://github.com/hemv-857/rzp-recovery-agent) | Razorpay |
+| [ptm-recovery-agent](https://github.com/hemv-857/ptm-recovery-agent) | Paytm |
