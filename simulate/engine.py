@@ -6,7 +6,7 @@ Event kinds: case_ingest | organic | action_due | sweep
 from __future__ import annotations
 
 import heapq
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.agent import ingest_failure, mark_recovered, plan_and_schedule, write_off
 from app.executor import ChannelAdapter, execute_action
@@ -48,7 +48,7 @@ def run(payments, cfg: dict, store,
     try:
         while heap:
             ts, _, kind, payload = heapq.heappop(heap)
-            now = datetime.fromtimestamp(ts, tz=timezone.utc)
+            now = datetime.fromtimestamp(ts, tz=UTC)
 
             if kind == "case_ingest":
                 fp, g = payload
