@@ -10,7 +10,7 @@ import json
 import logging
 import os
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
@@ -94,7 +94,7 @@ def parse_webhook(payload: dict) -> IngestedFailure | None:
             customer_name=customer.get("name"),
             failed_at=(
                 datetime.fromtimestamp(
-                    payment.get("created_at", 0), tz=timezone.utc
+                    payment.get("created_at", 0), tz=UTC
                 )
                 if payment.get("created_at")
                 else None
@@ -228,7 +228,7 @@ async def razorpay_webhook(
     _diagnosis_queue.append({
         "ctx": ctx,
         "failure": asdict(failure),
-        "queued_at": datetime.now(timezone.utc).isoformat(),
+        "queued_at": datetime.now(UTC).isoformat(),
     })
 
     # 7. Return immediately (<12ms target)

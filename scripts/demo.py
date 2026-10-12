@@ -20,7 +20,7 @@ import hmac
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -108,7 +108,7 @@ def seed_sim(db: str) -> None:
         if f.exists():
             f.unlink()
     payments = generate_batch(150, datetime(2026, 8, 20, 6, 0,
-                                            tzinfo=timezone.utc), seed=7)
+                                            tzinfo=UTC), seed=7)
     store = Store(p)
     run(payments, cfg, store)
     store.close()

@@ -7,7 +7,7 @@ import os
 import random
 import re
 from contextvars import ContextVar
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -230,7 +230,7 @@ async def razorpay_webhook(
                 from .notifier import case_line, notify
                 notify(f":rocket: recovery-agent — high-value case awaiting "
                        f"human approval: {case_line(case)}")
-        plan_and_schedule(case, cfg, datetime.now(timezone.utc), store)
+        plan_and_schedule(case, cfg, datetime.now(UTC), store)
         store.mark_event_processed(event_id, etype)
         return {"status": "ingested", "case_id": case.case_id}
 
@@ -258,8 +258,8 @@ async def razorpay_webhook(
         verification = "live_verified" if is_live else "demo_verified"
         mark_recovered(
             case, payment_id or "plink_paid", pl["amount"],
-            datetime.fromtimestamp(paid_at, tz=timezone.utc).isoformat()
-            if paid_at else datetime.now(timezone.utc).isoformat(),
+            datetime.fromtimestamp(paid_at, tz=UTC).isoformat()
+            if paid_at else datetime.now(UTC).isoformat(),
             store, via="webhook", verification=verification,
         )
         store.mark_event_processed(event_id, etype)
@@ -293,7 +293,7 @@ def demo_verify(case_id: str) -> dict:
         amount = case.amount
         from .agent import mark_recovered
         mark_recovered(case, "demo_payment", amount,
-                       datetime.now(timezone.utc).isoformat(),
+                       datetime.now(UTC).isoformat(),
                        store, via="demo", verification="demo_verified")
         return {
             "status": "recovered",
@@ -379,7 +379,7 @@ def opt_out(case_id: str, x_agent_token: str = Header("")) -> dict:
 def tick(x_agent_token: str = Header("")) -> dict:
     """Run all due scheduled actions. In production a cron hits this every minute."""
     _require_agent_token(x_agent_token)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     store = _store()
     cfg = _cfg()
     channels = ChannelAdapter()
@@ -428,13 +428,13 @@ async def inbound_reply(request: Request) -> dict:
 
     if parsed.intent is Intent.ALREADY_PAID:
         mark_recovered(case, "manual_confirmation", case.amount,
-                       datetime.now(timezone.utc).isoformat(), store,
+                       datetime.now(UTC).isoformat(), store,
                        via="customer_reply")
         return {"status": "recovered"}
 
     if parsed.intent is Intent.PROMISE:
-        due_utc = parsed.due.astimezone(timezone.utc)
-        case.promised_at = datetime.now(timezone.utc).isoformat()
+        due_utc = parsed.due.astimezone(UTC)
+        case.promised_at = datetime.now(UTC).isoformat()
         case.promise_due = due_utc.isoformat()
         case.touch()
         store.upsert_case(case)
@@ -714,7 +714,7 @@ async def batch_run_stream(
         # Rehearsed seed for consistent demo runs (arpit1021-ux pattern)
         effective_seed = 42 if rehearsed else seed
 
-        payments = generate_batch(cases, datetime.now(timezone.utc), seed=effective_seed)
+        payments = generate_batch(cases, datetime.now(UTC), seed=effective_seed)
         total = len(payments)
 
         yield f"data: {total}\n\n"
@@ -930,7 +930,7 @@ def model_calibration() -> dict[str, Any]:
         from .recovery_model import predict_recovery
         action = _contact_ladder(c, _cfg())
         pred = predict_recovery(c, action, len(c.attempt_times),
-                                datetime.now(timezone.utc).isoformat(), _cfg())
+                                datetime.now(UTC).isoformat(), _cfg())
         recovered = 1 if c.recovered_amount > 0 else 0
         predictions.append((pred.probability, recovered))
 
@@ -989,7 +989,7 @@ def case_decision(case_id: str) -> dict[str, Any]:
         raise HTTPException(404, "case not found")
 
     cfg = _cfg()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     from .models import ActionType
     from .policy import Decision, economic_stop, evaluate
@@ -1583,7 +1583,7 @@ def case_uplift(case_id: str) -> dict[str, Any]:
     }
 
 
-FIXED_NOW = datetime.now(timezone.utc)
+FIXED_NOW = datetime.now(UTC)
 
 
 # --- Intervention Budget (recoup pattern) ---
@@ -1690,7 +1690,7 @@ async def ws_replay(websocket: WebSocket, seed: int = 42, cases: int = 100):
         cfg = _cfg()
         store = _store()
 
-        payments = generate_batch(cases, datetime.now(timezone.utc), seed=seed)
+        payments = generate_batch(cases, datetime.now(UTC), seed=seed)
         total = len(payments)
 
         await websocket.send_json({"type": "start", "total": total, "seed": seed})

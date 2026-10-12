@@ -18,7 +18,10 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Lint
         run: |
-          pip install ruff
+          # Pinned: an unpinned ruff silently changes which rules fire on
+          # release, which turned this pipeline red on 0.17.0 (UP017/UP042).
+          # Bump it deliberately, in a PR.
+          pip install 'ruff==0.17.0'
           ruff check .
       - name: Offline batch smoke (500 cases)
         run: |

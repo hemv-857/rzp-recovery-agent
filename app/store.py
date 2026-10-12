@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -276,10 +277,10 @@ class Store:
         return row is not None
 
     def mark_event_processed(self, event_id: str, event_type: str = "") -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
         self.conn.execute(
             "INSERT OR IGNORE INTO webhook_events (event_id, processed_at, event_type) "
             "VALUES (?,?,?)",
-            (event_id, datetime.now(timezone.utc).isoformat(), event_type),
+            (event_id, datetime.now(UTC).isoformat(), event_type),
         )
         self.conn.commit()
